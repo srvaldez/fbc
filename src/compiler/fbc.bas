@@ -4010,6 +4010,15 @@ private sub hAddDefaultLibs( )
 		fbcAddDefLib( "mingwex" )
 		fbcAddDefLib( "moldname" )
 
+		if( (len( fbcFindLibFile( "libmsvcrt-os.a" ) ) > 0)) then
+		    fbcAddDefLib( "msvcrt-os" )
+		end if
+		/'
+		if( (len( fbcFindLibFile( "libpthread.a" ) ) > 0)) then
+		    fbcAddDefLib( "pthread" )
+		end if
+		'/
+
 		'' Link libgcc_eh if it exists
 		if( (len( fbcFindLibFile( "libgcc_eh.a"     ) ) > 0) or _
 			(len( fbcFindLibFile( "libgcc_eh.dll.a" ) ) > 0) ) then
