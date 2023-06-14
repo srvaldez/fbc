@@ -10,7 +10,7 @@
 	#if defined(__FB_WIN32__) and defined(__FB_64BIT__)
 		#define B1 0
 	#else
-		#define B1 1
+		#define B1 0
 	#endif
 	'' inhibit some checks on mingw-org, however, we can't
 	'' tell the difference between mingw32 and mingw-org
