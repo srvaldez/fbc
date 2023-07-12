@@ -3850,12 +3850,7 @@ private sub hloadoperandsandwritebop(byval op as integer,byval v1 as IRVREG ptr,
 					else
 						ctx.usedreg Or=(1 Shl KREG_RCX)
 					end if
-
-					if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-						asm_code("mov ecx, "+op2)
-					else
-						asm_code("mov rcx, "+op2)
-					End If
+					asm_code("mov rcx, "+op2)
 				end if
 				op2="cl"
 			end if
@@ -3895,46 +3890,23 @@ private sub hloadoperandsandwritebop(byval op as integer,byval v1 as IRVREG ptr,
 				op2=regtempo
 			end if
 
-			if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-				asm_code("mov eax, "+op1)
-			else
-				asm_code("mov rax, "+op1)
-			End If
+			asm_code("mov rax, "+op1)
 
 			tempo2dtype=v2->dtype
 			if typeisptr(tempo2dtype) then tempo2dtype=FB_DATATYPE_INTEGER
 
-			if typeGetSize( tempodtype )=typeGetSize( FB_DATATYPE_INTEGER ) then
-				if tempodtype=FB_DATATYPE_UINT or tempodtype=FB_DATATYPE_ULONGINT or tempo2dtype=FB_DATATYPE_UINT or tempo2dtype=FB_DATATYPE_ULONGINT then
-					asm_code("mov edx, 0")
-					asm_code("div "+op2)
-				else
-					asm_code("cqo")
-					asm_code("idiv "+op2)
-				end if
+			if tempodtype=FB_DATATYPE_UINT or tempodtype=FB_DATATYPE_ULONGINT or tempo2dtype=FB_DATATYPE_UINT or tempo2dtype=FB_DATATYPE_ULONGINT then
+				asm_code("mov edx, 0")
+				asm_code("div "+op2)
 			else
-
-				if tempodtype=FB_DATATYPE_uLONG then
-					asm_code("mov edx, 0")
-					asm_code("div "+op2)
-				else
-					asm_code("cdq")
-					asm_code("idiv "+op2)
-				End If
-			End If
+				asm_code("cqo")
+				asm_code("idiv "+op2)
+			end if
 
 			if vr=0 then
-				if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-					asm_code("mov "+op1+", eax")
-				Else
-					asm_code("mov "+op1+", rax")
-				End If
+				asm_code("mov "+op1+", rax")
 			else
-				if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-					asm_code("mov "+*regstrd(vrreg)+", eax")
-				else
-					asm_code("mov "+*regstrq(vrreg)+", rax")
-				end if
+				asm_code("mov "+*regstrq(vrreg)+", rax")
 				restore_vrreg(vr,vrreg)
 			end if
 
@@ -3965,45 +3937,23 @@ private sub hloadoperandsandwritebop(byval op as integer,byval v1 as IRVREG ptr,
 				op2=regtempo
 			end if
 
-			if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-				asm_code("mov eax, "+op1)
-			else
-				asm_code("mov rax, "+op1)
-			End If
+			asm_code("mov rax, "+op1)
 
 			tempo2dtype=v2->dtype
 			if typeisptr(tempo2dtype) then tempo2dtype=FB_DATATYPE_INTEGER
 
-			if typeGetSize( tempodtype )=typeGetSize( FB_DATATYPE_INTEGER ) then
-				if tempodtype=FB_DATATYPE_UINT or tempodtype=FB_DATATYPE_ULONGINT or tempo2dtype=FB_DATATYPE_UINT or tempo2dtype=FB_DATATYPE_ULONGINT then
-					asm_code("mov edx, 0")
-					asm_code("div "+op2)
-				else
-					asm_code("cqo")
-					asm_code("idiv "+op2)
-				end if
+			if tempodtype=FB_DATATYPE_UINT or tempodtype=FB_DATATYPE_ULONGINT or tempo2dtype=FB_DATATYPE_UINT or tempo2dtype=FB_DATATYPE_ULONGINT then
+				asm_code("mov edx, 0")
+				asm_code("div "+op2)
 			else
-				if tempodtype=FB_DATATYPE_ULONG then
-					asm_code("mov edx, 0")
-					asm_code("div "+op2)
-				else
-					asm_code("cdq")
-					asm_code("idiv "+op2)
-				End If
-			End If
+				asm_code("cqo")
+				asm_code("idiv "+op2)
+			end if
 
 			if vr=0 then
-				if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-					asm_code("mov "+op1+", edx")
-				Else
-					asm_code("mov "+op1+", rdx")
-				End If
+				asm_code("mov "+op1+", rdx")
 			else
-				if tempodtype=FB_DATATYPE_LONG or tempodtype=FB_DATATYPE_ULONG then
-					asm_code("mov "+*regstrd(vrreg)+", edx")
-				else
-					asm_code("mov "+*regstrq(vrreg)+", rdx")
-				end if
+				asm_code("mov "+*regstrq(vrreg)+", rdx")
 				restore_vrreg(vr,vrreg)
 			end if
 
