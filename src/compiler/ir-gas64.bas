@@ -457,6 +457,11 @@ private sub check_optim(byref code as string)
 			poschar1=instr(code," ")
 			instruc=left(code,poschar1-1)
 			poschar2=instr(code,",")
+			if poschar2=0 then
+				''case movsb|w|d|q
+				prevpart1="":prevpart2="":previnstruc="":flag=KUSE_MOV
+				exit sub
+			End If
 			part1=trim(mid(code,poschar1+1,poschar2-poschar1-1))
 			poschar1=instr(code,"#")
 			if poschar1=0 then
@@ -4438,9 +4443,11 @@ private sub _emitconvert( byval v1 as IRVREG ptr, byval v2 as IRVREG ptr )
 
 	if v1->typ=IR_VREGTYPE_REG and v2->typ=IR_VREGTYPE_REG and (typeGetSize( v1dtype )  = typeGetSize( v2dtype )) and _
 	   (typeGetClass( v1dtype )=typeGetClass( v2dtype ) ) then
-	   asm_info("no move as exactly same size, vreg changed"+Str(v1->reg)+" becomes "+Str(v2->reg))
-	   v1->reg=v2->reg
-	   exit sub
+		if( v2dtype <> FB_DATATYPE_BOOLEAN ) then
+			asm_info("no move as exactly same size, vreg changed"+Str(v1->reg)+" becomes "+Str(v2->reg))
+			v1->reg=v2->reg
+			exit sub
+		end if
 	end if
 
 	if (v1dtype=FB_DATATYPE_LONGINT and v2dtype=FB_DATATYPE_LONGINT) or (v1dtype=FB_DATATYPE_ULONGINT and v2dtype=FB_DATATYPE_ULONGINT) then
