@@ -19,7 +19,7 @@ char *fb_hFloat2Str( double val, char *buffer, int digits, int mask )
 		fstr = (char *)&"%.7g";
 		break;
 	case 16:
-		fstr = (char *)&"%.16g";
+		fstr = (char *)&"%.15g";
 		break;
 	default:
 		sprintf( fmtstr, "%%.%dg", digits );
