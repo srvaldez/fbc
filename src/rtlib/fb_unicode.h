@@ -120,7 +120,7 @@ typedef uint8_t  UTF_8;
 
 #ifndef FB_WSTR_FROM_DOUBLE
 #define FB_WSTR_FROM_DOUBLE( buffer, num ) \
-    swprintf( buffer, 16+8 + 1, _LC("%.16g"), (double) (num) )
+    swprintf( buffer, 16+8 + 1, _LC("%.15g"), (double) (num) )
 #endif
 
 /* Calculate the number of characters between two pointers. */
