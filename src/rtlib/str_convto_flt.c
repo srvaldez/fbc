@@ -46,13 +46,13 @@ FBCALL FBSTRING *fb_DoubleToStr ( double num )
 	FBSTRING 	*dst;
 
 	/* alloc temp string */
-	dst = fb_hStrAllocTemp( NULL, 16+8 );
+	dst = fb_hStrAllocTemp( NULL, 15+8 );
 	if( dst != NULL )
 	{
 		size_t tmp_len;
 
 		/* convert */
-		sprintf( dst->data, "%.16g", num );
+		sprintf( dst->data, "%.15g", num );
 
 		tmp_len = strlen( dst->data );				/* fake len */
 
