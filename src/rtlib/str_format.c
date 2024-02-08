@@ -332,7 +332,7 @@ int fb_hProcessMask
 					else
 						value *= pow( 10.0, -ExpValue + pInfo->num_digits_fix );
 #else
-					value = 0.0;
+					//value = 0.0;
 #endif
 					ExpValue = 0;
 				}
