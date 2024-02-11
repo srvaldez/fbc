@@ -135,7 +135,7 @@ static int save_bmp(FB_GFXCTX *ctx, FILE *f, void *src, void *pal, int outbpp)
 			palette = __fb_gfx->device_palette;
 		}
 		else {
-			paltmp = (unsigned int *)calloc(sizeof(unsigned int), 256);
+			paltmp = (unsigned int *)calloc(sizeof(unsigned int)+0, 256);
 			if (paltmp == 0) {
 				return FB_RTERROR_OUTOFMEM;
 			}
