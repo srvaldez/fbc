@@ -106,7 +106,7 @@ enum EMIT_NODEOP
 	'' mem
 	EMIT_OP_MEMMOVE
 	EMIT_OP_MEMSWAP
-	EMIT_OP_MEMCLEAR
+	EMIT_OP_MEMFILL
 	EMIT_OP_STKCLEAR
 
 	'' dgb
@@ -824,10 +824,12 @@ declare function emitMEMSWAP _
 		byval bytes as integer _
 	) as EMIT_NODE ptr
 
-declare function emitMEMCLEAR _
+declare function emitMEMFILL _
 	( _
 		byval dvreg as IRVREG ptr, _
-		byval bytes_vreg as IRVREG ptr _
+		byval bytes_vreg as IRVREG ptr, _
+		byval bytes as integer, _
+		byval fillchar as integer _
 	) as EMIT_NODE ptr
 
 declare function emitSTKCLEAR _
@@ -863,9 +865,9 @@ declare sub emitVARINIBEGIN( byval sym as FBSYMBOL ptr )
 declare sub emitVARINIi( byval dtype as integer, byval value as longint )
 declare sub emitVARINIf( byval dtype as integer, byval value as double )
 declare sub emitVARINIOFS( byval sname as zstring ptr, byval ofs as integer )
-declare sub emitVARINISTR( byval s as const zstring ptr )
+declare sub emitVARINISTR( byval s as const zstring ptr, byval noterm as integer )
 declare sub emitVARINIWSTR( byval s as zstring ptr )
-declare sub emitVARINIPAD( byval bytes as integer )
+declare sub emitVARINIPAD( byval bytes as integer, byval fillchar as integer )
 declare sub emitFBCTINFBEGIN( )
 declare sub emitFBCTINFSTRING( byval s as const zstring ptr )
 declare sub emitFBCTINFEND( )

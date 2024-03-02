@@ -513,6 +513,21 @@ private function cMangleModifier _
 
 end function
 
+''
+private sub hCheckFixedStringSize _
+	( _
+		byref lgt as longint _
+	)
+
+	'' min 1 char, max 2^31-1 = 2,147,483,647
+	if( (lgt < 1) orelse (lgt > 2147483647ll) ) then
+		errReport( FB_ERRMSG_INVALIDSIZE, TRUE )
+		'' error recovery: fake a len
+		lgt = 1
+	end if
+
+end sub
+
 '':::::
 ''SymbolType      =   CONST? UNSIGNED? (
 ''                    ANY
@@ -753,7 +768,7 @@ function cSymbolType _
 							lexSkipToken( LEXCHECK_POST_SUFFIX )
 							dtype = FB_DATATYPE_STRUCT
 							subtype = sym
-							lgt = symbGetLen( sym )
+							lgt = symbGetSizeOf( sym )
 							cMangleModifier( dtype, subtype )
 							exit do, do
 
@@ -774,7 +789,7 @@ function cSymbolType _
 							lexSkipToken( LEXCHECK_POST_SUFFIX )
 							dtype = symbGetFullType( sym )
 							subtype = symbGetSubtype( sym )
-							lgt = symbGetLen( sym )
+							lgt = symbGetSizeOf( sym )
 							is_fixlenstr = symbGetIsFixLenStr( sym )
 							ptr_cnt += typeGetPtrCnt( dtype )
 							exit do, do
@@ -851,26 +866,13 @@ function cSymbolType _
 
 		select case as const typeGet( dtype )
 		case FB_DATATYPE_STRING
-			'' plus the null-term
-			lgt += 1
-
-			'' min 1 char (+ null-term)
-			if( lgt <= 1 ) then
-				errReport( FB_ERRMSG_SYNTAXERROR, TRUE )
-				'' error recovery: fake a len
-				lgt = 2
-			end if
+			hCheckFixedStringSize( lgt )
 
 			'' remap type
 			dtype = FB_DATATYPE_FIXSTR
 
 		case FB_DATATYPE_CHAR, FB_DATATYPE_WCHAR
-			'' min 1 char
-			if( lgt < 1 ) then
-				errReport( FB_ERRMSG_SYNTAXERROR, TRUE )
-				'' error recovery: fake a len
-				lgt = 1
-			end if
+			hCheckFixedStringSize( lgt )
 
 			'' note: len of "wstring * expr" symbols will be actually
 			''       the number of chars times sizeof(wstring), so
@@ -887,6 +889,7 @@ function cSymbolType _
 
 		'' STRING * N can't be allowed with BYREF or pointers, because
 		'' we can't represent the * N on expression data types.
+		'' plus, we can't assume a NULL terminator.
 		if( options and FB_SYMBTYPEOPT_ISBYREF ) then
 			errReport( FB_ERRMSG_BYREFFIXSTR, TRUE )
 		end if

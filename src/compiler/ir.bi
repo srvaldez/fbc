@@ -309,7 +309,8 @@ type IR_VTBL
 		byval op as integer, _
 		byval v1 as IRVREG ptr, _
 		byval v2 as IRVREG ptr, _
-		byval bytes as longint _
+		byval bytes as longint, _
+		byval fillchar as integer _
 	)
 
 	emitMacro as sub _
@@ -355,7 +356,8 @@ type IR_VTBL
 	( _
 		byval totlgt as longint, _
 		byval litstr as zstring ptr, _
-		byval litlgt as longint _
+		byval litlgt as longint, _
+		byval noterm as integer _
 	)
 
 	emitVarIniWstr as sub _
@@ -365,7 +367,7 @@ type IR_VTBL
 		byval litlgt as longint _
 	)
 
-	emitVarIniPad as sub( byval bytes as longint )
+	emitVarIniPad as sub( byval bytes as longint, byval fillchar as integer )
 	emitVarIniScopeBegin as sub( byval sym as FBSYMBOL ptr, byval is_array as integer )
 	emitVarIniScopeEnd as sub( )
 
@@ -548,9 +550,9 @@ declare sub vregDump( byval v as IRVREG ptr )
 #define irEmitVARINIi(sym, value) ir.vtbl.emitVarIniI( sym, value )
 #define irEmitVARINIf(sym, value) ir.vtbl.emitVarIniF( sym, value )
 #define irEmitVARINIOFS(sym, rhs, ofs) ir.vtbl.emitVarIniOfs( sym, rhs, ofs )
-#define irEmitVARINISTR(totlgt, litstr, litlgt) ir.vtbl.emitVarIniStr( totlgt, litstr, litlgt )
+#define irEmitVARINISTR(totlgt, litstr, litlgt, noterm) ir.vtbl.emitVarIniStr( totlgt, litstr, litlgt, noterm )
 #define irEmitVARINIWSTR(totlgt, litstr, litlgt) ir.vtbl.emitVarIniWstr( totlgt, litstr, litlgt )
-#define irEmitVARINIPAD(bytes) ir.vtbl.emitVarIniPad( bytes )
+#define irEmitVARINIPAD(bytes,fillchar) ir.vtbl.emitVarIniPad( bytes, fillchar )
 #define irEmitVARINISCOPEBEGIN( sym, is_array ) ir.vtbl.emitVarIniScopeBegin( sym, is_array )
 #define irEmitVARINISCOPEEND( ) ir.vtbl.emitVarIniScopeEnd( )
 
@@ -612,7 +614,7 @@ declare sub vregDump( byval v as IRVREG ptr )
 
 #define irEmitBRANCH(op, label) ir.vtbl.emitBranch( op, label )
 
-#define irEmitMEM(op, v1, v2, bytes) ir.vtbl.emitMem( op, v1, v2, bytes )
+#define irEmitMEM(op, v1, v2, bytes, fillchar) ir.vtbl.emitMem( op, v1, v2, bytes, fillchar )
 
 #define irEmitSCOPEBEGIN(s) ir.vtbl.emitScopeBegin( s )
 

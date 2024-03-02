@@ -15,7 +15,8 @@ function astNewMEM _
 		byval op as integer, _
 		byval l as ASTNODE ptr, _
 		byval r as ASTNODE ptr, _
-		byval bytes as longint _
+		byval bytes as longint, _
+		byval fillchar as integer _
 	) as ASTNODE ptr
 
 	dim as ASTNODE ptr n = any
@@ -23,7 +24,7 @@ function astNewMEM _
 	dim as uinteger blkmaxlen = irGetOptionValue( IR_OPTIONVALUE_MAXMEMBLOCKLEN )
 
 	dim as ulongint lgt = bytes
-	if( op = AST_OP_MEMCLEAR ) then
+	if( op = AST_OP_MEMFILL ) then
 		if( astIsCONST( r ) ) then
 			lgt = astConstGetInt( r )
 		else
@@ -49,6 +50,7 @@ function astNewMEM _
 	n->l = l
 	n->r = r
 	n->mem.bytes = bytes
+	n->mem.fillchar = fillchar
 
 	function = n
 end function
@@ -263,7 +265,7 @@ function astBuildNewOp _
 		lenexpr = astNewBOP( AST_OP_MUL, hElements( elementsexpr, elementstreecount ), _
 				astNewCONSTi( symbCalcLen( dtype, subtype ), FB_DATATYPE_UINT ) )
 
-		initexpr = astNewMEM( AST_OP_MEMCLEAR, _
+		initexpr = astNewMEM( AST_OP_MEMFILL, _
 				astNewDEREF( astNewVAR( tmp ) ), _
 				astNewCONV( FB_DATATYPE_UINT, NULL, lenexpr ) )
 
@@ -403,7 +405,7 @@ function astLoadMEM( byval n as ASTNODE ptr ) as IRVREG ptr
 	end if
 
 	if( ast.doemit ) then
-		irEmitMEM( n->mem.op, v1, v2, n->mem.bytes )
+		irEmitMEM( n->mem.op, v1, v2, n->mem.bytes, n->mem.fillchar )
 	end if
 
 	function = NULL

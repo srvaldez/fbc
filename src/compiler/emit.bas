@@ -1631,13 +1631,15 @@ function emitMEMSWAP _
 end function
 
 '':::::
-function emitMEMCLEAR _
+function emitMEMFILL _
 	( _
 		byval dvreg as IRVREG ptr, _
-		byval bytes_vreg as IRVREG ptr _
+		byval bytes_vreg as IRVREG ptr, _
+		byval bytes as integer, _
+		byval fillchar as integer _
 	) as EMIT_NODE ptr static
 
-	function = hNewMEM( EMIT_OP_MEMCLEAR, dvreg, bytes_vreg, 0 )
+	function = hNewMEM( EMIT_OP_MEMFILL, dvreg, bytes_vreg, bytes, fillchar )
 
 end function
 
