@@ -804,12 +804,13 @@ private function hEmitArrayDecl( byval sym as FBSYMBOL ptr ) as string
 	if( symbIsRef( sym ) = FALSE ) then
 		'' If it's a fixed-length string, add an extra array dimension
 		'' (zstring * 5 becomes char[5])
+		'' (string * 5 becomes char[5])
 		dim as longint length = 0
 		select case( symbGetType( sym ) )
 		case FB_DATATYPE_FIXSTR, FB_DATATYPE_CHAR
-			length = symbGetStrLen( sym )
+			length = symbGetSizeOf( sym )
 		case FB_DATATYPE_WCHAR
-			length = symbGetWstrLen( sym )
+			length = symbGetWstrLength( sym ) + 1
 		end select
 		if( length > 0 ) then
 			s += "[" + str( length ) + "]"
@@ -1179,7 +1180,7 @@ private sub hEmitStruct( byval s as FBSYMBOL ptr, byval is_ptr as integer )
 	if( emit_fields ) then
 		hEmitStructWithFields( s )
 	else
-		hWriteLine( "uint8 __fb_struct_body[" & symbGetLen( s ) & "];", TRUE )
+		hWriteLine( "uint8 __fb_struct_body[" & symbGetSizeOf( s ) & "];", TRUE )
 	end if
 
 	'' Close UDT body
@@ -1192,7 +1193,7 @@ private sub hEmitStruct( byval s as FBSYMBOL ptr, byval is_ptr as integer )
 	'' at least with the correct sizeof(), because if it'd be too small,
 	'' that could easily cause stack trashing etc., because local vars
 	'' allocated by gcc would be smaller than expected, etc.
-	hWriteStaticAssert( "sizeof( " + hGetUdtTag( s ) + hGetUdtId( s ) + " ) == " + str( culngint( symbGetLen( s ) ) ) )
+	hWriteStaticAssert( "sizeof( " + hGetUdtTag( s ) + hGetUdtId( s ) + " ) == " + str( culngint( symbGetSizeOf( s ) ) ) )
 end sub
 
 private sub hWriteX86F2I _
@@ -2161,7 +2162,8 @@ private sub hBuildStrLit _
 	( _
 		byref ln as string, _
 		byval z as zstring ptr, _
-		byval length as longint _  '' including null terminator
+		byval length as longint, _  '' including null terminator
+		byval paddedlength as longint _
 	)
 
 	dim as integer ch = any
@@ -2211,6 +2213,10 @@ private sub hBuildStrLit _
 			ln += chr( ch )
 		end if
 	next
+
+	if( paddedlength > length ) then
+		ln += space( paddedlength-length )
+	end if
 
 	ln += """"
 end sub
@@ -2370,9 +2376,9 @@ private sub hSym2Text( byref s as string, byval sym as FBSYMBOL ptr )
 	'' String literal?
 	if( symbGetIsLiteral( sym ) ) then
 		if( symbGetType( sym ) = FB_DATATYPE_WCHAR ) then
-			hBuildWstrLit( s, hUnescapeW( symbGetVarLitTextW( sym ) ), symbGetWstrLen( sym ) )
+			hBuildWstrLit( s, hUnescapeW( symbGetVarLitTextW( sym ) ), symbGetWstrLength( sym ) + 1 )
 		else
-			hBuildStrLit( s, hUnescape( symbGetVarLitText( sym ) ), symbGetStrLen( sym ) )
+			hBuildStrLit( s, hUnescape( symbGetVarLitText( sym ) ), symbGetStrLength( sym ) + 1, 0 )
 		end if
 	else
 		if( symbIsLabel( sym ) ) then
@@ -3328,12 +3334,13 @@ private sub _emitMem _
 		byval op as integer, _
 		byval v1 as IRVREG ptr, _
 		byval v2 as IRVREG ptr, _
-		byval bytes as longint _
+		byval bytes as longint, _
+		byval fillchar as integer _
 	)
 
 	select case op
-	case AST_OP_MEMCLEAR
-		hWriteLine("__builtin_memset( " + exprFlush( exprNewVREG( v1 ) ) + ", 0, " + exprFlush( exprNewVREG( v2 ) ) + " );" )
+	case AST_OP_MEMFILL
+		hWriteLine("__builtin_memset( " + exprFlush( exprNewVREG( v1 ) ) + ", " + str(fillchar) + ", " + exprFlush( exprNewVREG( v2 ) ) + " );" )
 	case AST_OP_MEMMOVE
 		hWriteLine("__builtin_memcpy( " + exprFlush( exprNewVREG( v1 ) ) + ", " + exprFlush( exprNewVREG( v2 ) ) + ", " + str( cunsg( bytes ) ) + " );" )
 	end select
@@ -3665,7 +3672,7 @@ private sub _emitAsmLine( byval asmtokenhead as ASTASMTOK ptr )
 		'' .asm:
 		''    .ascii "zzz\"\0"
 		''
-		hBuildStrLit( ln, strptr( asmcode ), len( asmcode ) + 1 )
+		hBuildStrLit( ln, strptr( asmcode ), len( asmcode ) + 1, 0 )
 
 		'' Only when inside normal procedures
 		'' (NAKED procedures don't increase the indentation)
@@ -3819,7 +3826,8 @@ private sub _emitVarIniStr _
 	( _
 		byval varlength as longint, _    '' without null terminator
 		byval literal as zstring ptr, _
-		byval litlength as longint _     '' without null terminator
+		byval litlength as longint, _     '' without null terminator
+		byval noterm as integer _
 	)
 
 	'' Simple fixed-length string initialized from string literal
@@ -3831,7 +3839,11 @@ private sub _emitVarIniStr _
 		litlength = varlength
 	end if
 
-	hBuildStrLit( ctx.varini, hUnescape( literal ), litlength + 1 )
+	if( noterm ) then
+		hBuildStrLit( ctx.varini, hUnescape( literal ), litlength + 1, varlength + 1 )
+	else
+		hBuildStrLit( ctx.varini, hUnescape( literal ), litlength + 1, 0 )
+	end if
 
 	hVarIniSeparator( )
 
@@ -3892,7 +3904,7 @@ private sub _emitVarIniWstr _
 
 end sub
 
-private sub _emitVarIniPad( byval bytes as longint )
+private sub _emitVarIniPad( byval bytes as longint, byval fillchar as integer )
 	'' Nothing to do -- we're using {...} for structs and each array
 	'' dimension, and gcc will zero-initialize any uninitialized elements,
 	'' aswell as add padding between fields etc. where needed.
