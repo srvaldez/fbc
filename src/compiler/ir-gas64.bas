@@ -1959,7 +1959,7 @@ private sub memfill(byval bytestofill as Integer,byref dst as string,byval dtyp 
 		asm_code("mov word ptr ["+regdst+"], "+Str(fill2),nooptim)
 		nbbytes-=2
 		if nbbytes>0 then
-			asm_code("mov byte ptr 2["+regdst+"], "+Str(fill2),nooptim)
+			asm_code("mov byte ptr 2["+regdst+"], "+Str(fillchar),nooptim)
 		end if
 	elseif nbbytes>0 then
 		 ''clear 1 byte
@@ -6620,7 +6620,7 @@ private sub _emitmem(byval op as integer,byval v1 as IRVREG ptr,byval v2 as IRVR
 			asm_info("memfill " + vregPretty( v1 ))
 			asm_info("v1="+vregdumpfull(v1))
 			asm_info("v2="+vregdumpfull(v2))
-
+			asm_info("fillchar="+str(fillchar))
 			if v1->typ=IR_VREGTYPE_REG then
 				regsrc=reg_findreal(v1->reg)
 				op1=*regstrq(regsrc)
@@ -7190,11 +7190,7 @@ private sub _emitvariniofs(byval sym as FBSYMBOL ptr,byval rhs as FBSYMBOL ptr,b
 end sub
 private sub _emitvarinipad( byval bytes as longint, byval fillchar as integer )
 	asm_info("_emitvarinipad="+Str(bytes)+","+Str(fillchar))
-	if( fillchar <> 0 ) then
-		asm_code(".skip "+Str(bytes)+","+Str(fillchar))
-	else
-		asm_code(".zero "+Str(bytes))
-	end if
+	asm_code(".skip "+Str(bytes)+","+Str(fillchar))
 end sub
 private sub _emitfbctinfstring( byval s as const zstring ptr )
 	asm_info("_emitfbctinfstring="+*s)
@@ -7203,7 +7199,7 @@ private sub _emitfbctinfstring( byval s as const zstring ptr )
 end sub
 private sub _emitvarinistr(byval varlength as longint,byval literal as zstring ptr,byval litlength as longint,byval noterm as integer)
 	dim as const zstring ptr s
-
+	DIM AS INTEGER fillvalue
 	asm_info("emitVarIniStr="+*literal)
 	'asm_code(".align 8")
 	if varlength=0 then
@@ -7217,18 +7213,15 @@ private sub _emitvarinistr(byval varlength as longint,byval literal as zstring p
 		s = hEscape( literal )
 	end if
 	if( noterm ) then
-		'' pad with spaces
+		'' pad with spaces no null terminator
+		fillvalue=32
 		asm_code(".ascii """+*s+$"""")
-		If( litlength < varlength ) then
-			'' pad with spaces, no null terminator
-			asm_code(".skip "+Str( varlength - litlength )+",32")
-		end if
 	else
 		asm_code(".ascii """+*s+$"\0""")
-		If( litlength < varlength ) then ''skip the exceding space
-			'' pad with zeroes
-			asm_code(".zero "+Str( varlength - litlength ))
-		end if
+	end if
+	If( litlength < varlength ) then
+		'' pad with spaces or zeros
+		asm_code(".skip "+Str( varlength - litlength )+","+str(fillvalue))
 	end if
 end sub
 
