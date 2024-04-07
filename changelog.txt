@@ -20,6 +20,7 @@ Version 1.20.0
 - STRING*N/LSET/RSET will pad strings with spaces up to the size of the fixed length string
 - arguments of STRING*N type are copied to a temporary variable when passed to BYVAL ZSTRING PTR and BYREF ZSTRING parameters (since there is no expectaction that STRING*N will have it's own terminating null character) and copied back after the call
 - Allow ZSTRING*N and WSTRING*N arguments passed to BYREF AS STRING paremeters to be modified (copied back to original variable)
+- updated bindings: WinAPI: replace sdkddkver.bi with hand translated version, preserving the logic of the original  
 
 [added]
 - x86_64: optimize SHL MOD INTDIV to use 32-bit operation when result will be converted to long/ulong
@@ -49,8 +50,8 @@ Version 1.20.0
 - fbc: '-print fork-id' command line option to report the fork-id version of fbc
 - fbc: '-nolib fbrt0.o' and '-nolib fbrt0pic.o' can be used to omit fb's startup files from the link.  Implied by '-nodeflibs'.
 - fbc: '-z nobuiltins' command line option to disable all non-required built-in procedure definitions
-- sf.net feature #273 fbc: allow UDT operators (LET, +=, etc) to support array parameters
-- improved stabs debug information for STRING*N, ZSTRING*N, and WSTRING*N types
+- sf.net feature #285 fbc: allow UDT operators (LET, +=, etc) to support array parameters
+- improved stabs debug information in -gen gas and -gen gas64 for STRING*N, ZSTRING*N, and WSTRING*N types
 
 [fixed]
 - github #410: give consistent floating point comparisons results involving NaNs.
@@ -78,15 +79,20 @@ Version 1.20.0
 - sf.net #991: fbc: parse empty parens '()' for arrays when used in UDT operator expressions (LET, +=, etc)
 - sf.net #1003: symbol.bi typo in macro - should have been FB_DATACLASS_FPOINT
 - fbc: __FB_QUERY_SYMBOL__: evaluation contexts were reading past the end of the current buffer and in to the current file causing tokens to be consumed in the wrong context  
+- github #424: fbc: Invalid assignment/conversion, before 'Then' in function returned Const ZString Ptr
+- updated bindings: WinAPI: Allow FD_SETSIZE to be defined by user before including winsock.bi and winsock2.bi
 
 
 Version 1.10.3
 
 [changed]
+- updated bindings: Windows API - refresh the existing windows headers after retranslating with addition of version 8.1 (&h0603) and windows 10 (&h0A00)
+- updated bindings: add machine translated versions of inc/win/excpt.bi and inc/win/sdkddkver.bi 
 
 [added]
 
 [fixed]
+- github #33: Bi include error in ntdef.bi 
 - bad code generation of operator cast() UDT ptr passed to byval UDT ptr parameter when matching constructors() are also present
 
 
