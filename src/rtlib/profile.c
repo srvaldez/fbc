@@ -346,13 +346,14 @@ void fb_hPROFILER_METRICS_Strings( FB_PROFILER_METRICS *metrics, STRING_TABLE *s
 void fb_hPROFILER_METRICS_HashTable( FB_PROFILER_METRICS *metrics, STRING_HASH_TABLE *hash )
 {
 	STRING_HASH_TB *tb;
+	int i;
 	if( metrics && hash ) {
 		tb = hash->tb;
 		while( tb ) {
 			metrics->hash_bytes_allocated += sizeof( STRING_HASH_TB );
 			metrics->hash_count_blocks += 1;
 
-			for( int i=0; i < STRING_HASH_TB_SIZE; i++ )
+			for( i=0; i < STRING_HASH_TB_SIZE; i++ )
 			{
 				if( tb->items[i] ) {
 					metrics->hash_count_items += 1;
@@ -394,7 +395,11 @@ FB_PROFILER_GLOBAL *PROFILER_GLOBAL_create( void ) {
 
 		time( &rawtime );
 		ptm = localtime( &rawtime );
-		sprintf( fb_profiler->launch_time, "%02d-%02d-%04d, %02d:%02d:%02d", 1+ptm->tm_mon, ptm->tm_mday, 1900+ptm->tm_year, ptm->tm_hour, ptm->tm_min, ptm->tm_sec );
+		snprintf( fb_profiler->launch_time, sizeof(fb_profiler->launch_time),
+		         "%02d-%02d-%04d, %02d:%02d:%02d",
+		         (int)(1+ptm->tm_mon), (int)(ptm->tm_mday), (int)(1900+ptm->tm_year),
+		         (int)ptm->tm_hour, (int)ptm->tm_min, (int)ptm->tm_sec );
+		fb_profiler->launch_time[sizeof(fb_profiler->launch_time)-1] = '\0';
 	}
 	return fb_profiler;
 }
