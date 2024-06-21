@@ -45,20 +45,20 @@
 #       - a remote branch or tag name, must specify "remote-name/branch".
 #
 # --offline
-#   when given, build.sh will stop with exit code 1 if the file is not already in
+#   when given, build.sh will stop with exit code 1 if the file is not already
 #   in the download cache.
 #
 # --repo url
-#   specify an additional repo url to fetch in to the local repo other than the 
+#   specify an additional repo url to fetch in to the local repo other than the
 #   official https://github.com/freebasic/fbc.git repo.
 #
 # --remote name
-#   specifies the remote name to add and use when referring to the other repo url.
-#   remote name will default to 'other' if the --repo option was given.
+#   specifies the remote name to add and use when referring to the other repo
+#   url. remote name will default to 'other' if the --repo option was given.
 #   remote name will default to 'origin' if the --repo option was not given.
 #
 # --recipe name
-#   specify which build recipe to use.  Not all recipes are supported on all targets.
+#   specify which build recipe to use:
 #     * -gcc-5.2.0          (mingw-w64 project)
 #       -gcc-7.1.0          (mingw-w64 project)
 #       -gcc-7.1.0r0        (mingw-w64 project)
@@ -75,6 +75,17 @@
 #       -winlibs-gcc-10.2.0 (winlibs mingwrt 8.0.0r8)
 #       -winlibs-gcc-10.3.0 (winlibs mingwrt 8.0.0r1)
 #       -equation-gcc-8.3.0 (Equation - experimental)
+#     * -linux-arm
+#     * -raspbian9-arm
+#     * -debian12-armhf
+#     * -rpios10-arm
+#     * -rpios10-aarch64
+#     * -rpios11-arm
+#     * -rpios11-aarch64
+#     * -linux-aarch64
+#     * -ubuntu-22.04-aarch64
+#
+#   Not all recipes are supported on all targets.
 #
 # Requirements:
 #   - MSYS environment on Windows with: bash, wget/curl, zip, unzip, patch, make, findutils
@@ -83,13 +94,13 @@
 #   - makensis (NSIS) in the PATH (FB-win32 installer)
 #   - git in the PATH
 #   - internet access for downloading input packages and fbc via git
-# 
+#
 # Some of the ideas behind this script:
 #   - Automating the build process for FB releases => less room for mistakes
 #   - Starting from scratch everytime => clean builds
 #   - Specifying the exact DJGPP/MinGW packages to use => reproducible builds
 #   - Only work locally, e.g. don't touch existing DJGPP/MinGW setups on the host
-# 
+#
 # TODO:
 #   - win32: fbdoc CHM
 #   - package libffi
@@ -120,7 +131,7 @@ usage() {
 }
 
 # parse command line arguments
-while [[ $# -gt 0 ]] 
+while [[ $# -gt 0 ]]
 do
 arg="$1"
 case $arg in
@@ -157,7 +168,7 @@ win32-mingworg)
 *)
 	fbccommit="$1"
 	shift
-	;;	
+	;;
 esac
 done
 
@@ -178,10 +189,20 @@ else
 fi
 
 # check recipe name
-# TODO: error on invalid combination of target and recipe
+# recipe_name is from the command line option, empty string if not given
+# user_recipe is either explicit (from command line) or automatic (below)
 if [ ! -z "$recipe_name" ]; then
-	user_recipe=$recipe_name
-	named_recipe=$recipe_name
+	# recipe_name may be blank and optionally start with a dash '-'
+	# user_recipe must be blank or start with a dash '-'
+	case "$recipe_name" in
+	""|-*)
+		user_recipe=$recipe_name
+		;;
+	*)
+		user_recipe=-$recipe_name
+		;;
+	esac
+	named_recipe=$user_recipe
 else
 	# if no recipe given, set the default recipe for the main package
 	user_recipe=
@@ -189,14 +210,29 @@ else
 	win32|win64)
 		named_recipe=-winlibs-gcc-9.3.0
 		;;
-	*)
-		named_recipe=
+	linux-arm)
+		# named recipe wasn't given, try and figure it out ...
+		if [ -f /etc/os-release ]; then
+			host_os_id=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+			host_os_ver=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
+		fi
+		case "$host_os_id-$host_os_ver" in
+		raspbian-9)
+			named_recipe=-raspbian9-arm
+			;;
+		esac
 		;;
 	esac
 fi
 
 echo "building FB-$target (uname = `uname`, uname -m = `uname -m`)"
 echo "from repository: https://github.com/freebasic/fbc.git"
+if [ ! -z "$user_recipe" ]; then
+	echo "user gave recipe '$user_recipe'"
+fi
+if [ ! -z "$named_recipe" ]; then
+	echo "using named recipe '$named_recipe'"
+fi
 if [ ! -z "$repo_url" ]; then
 	echo "from repository: $repo_url"
 fi
@@ -242,14 +278,15 @@ cd ../..
 cd build
 
 buildinfo=../output/buildinfo-$target$user_recipe.txt
+echo "buildinfo: $buildinfo"
 echo "fbc $fbccommit $target, build based on:" > $buildinfo
-echo "named recipe: $named_recipe" >> $buildinfo 
+echo "named recipe: $named_recipe" >> $buildinfo
 echo >> $buildinfo
 
 copyfile() {
 	srcfile="$1"
 	dstfile="$2"
-	
+
 	if [ -f "$dstfile" ]; then
 		echo "cached      $dstfile"
 	else
@@ -281,7 +318,7 @@ download() {
 				echo "download failed"
 				rm -f "../input/$filename"
 				exit 1
-			fi	
+			fi
 		fi
 	fi
 
@@ -303,24 +340,24 @@ repack_equation_exe() {
 	cd repack
 	mkdir $packname
 	mkdir $instname
-	
+
 	echo "Extracting installer files from $packname.exe"
 	cd $instname
 	7z x -y ../../$packname.exe > /dev/null
-	
+
 	echo "Copying directory structure"
 	cd source
 	find . -type d | xargs -L 1 -I % mkdir -p ../../$packname/%
-	
+
 	echo "Decompressing individual files"
 	# careful here with the quoting; this uses stdout redirection
 	find . -type f -exec sh -c "bzip2 -d -c '{}' > '../../$packname/{}'" \;
 
 	cd ../..
-	
+
 	echo "Creating normal 7z archive $packname.7z in cache"
 	7z a ../$packname.7z $packname > /dev/null
-	
+
 	cd ..
 
 	# clean-up
@@ -362,7 +399,7 @@ get_equation_toolchain() {
 		cd ../input/equation
 		repack_equation_exe $file
 		cd "$lastdir"
-	fi 
+	fi
 	7z x "../input/equation/$file.7z" > /dev/null
 	mv ./$file ./mingw$bits
 }
@@ -448,7 +485,7 @@ get_mingww64_toolchain() {
 	bits="$1"
 	arch="$2"
 	toolchain=mingw-w64
-	
+
 	case "$named_recipe" in
 	-mingw-w64-gcc-8.1.0|-gcc-8.1.0)
 		gccversion=8.1.0
@@ -603,9 +640,9 @@ dos)
 	download_djgpp ${djpkg}/v2gnu/ fil41br3
 	download_djgpp ${djpkg}/v2gnu/ mak43br2
 	download_djgpp ${djpkg}/v2gnu/ shl2011br3
-	download_djgpp ${djpkg}/v2gnu/ pth207b 
+	download_djgpp ${djpkg}/v2gnu/ pth207b
 
-	download_djgpp ${djpkg}/v2tk/ ls080b 
+	download_djgpp ${djpkg}/v2tk/ ls080b
 
 	# Sources for stuff that goes into the FB-dos package (needs updating to new versions)
 	download_djgpp ${djpkg}/v2gnu/ bnu${bnuver}s
@@ -614,19 +651,19 @@ dos)
 	download_djgpp ${djpkg}/v2/    djlsr${djver}
 
 	unzip -qo ../input/DJGPP/djdev${djver}.zip
-	
+
 	unzip -qo ../input/DJGPP/shl2011br3.zip
 	unzip -qo ../input/DJGPP/fil41br3.zip
 	unzip -qo ../input/DJGPP/mak43br2.zip
 	unzip -qo ../input/DJGPP/pth207b.zip
 
 	unzip -qo ../input/DJGPP/ls080b.zip
-	
+
 	unzip -qo ../input/DJGPP/gdb${gdbver}b.zip
 	unzip -qo ../input/DJGPP/bnu${bnuver}b.zip
 	unzip -qo ../input/DJGPP/gcc${gccver}b.zip
 	unzip -qo ../input/DJGPP/gpp${gccver}b.zip
-	
+
 	patch -p0 < ../djgpp-pthread-types.patch
 	;;
 win32)
@@ -636,7 +673,7 @@ win32)
 	mkdir -p ../input/MinGW.org
 	mkdir mingworg-gdb
 	get_mingworggdb() {
-		download_mingw "$1" 
+		download_mingw "$1"
 		tar xf "../input/MinGW.org/$1" -C mingworg-gdb
 	}
 	get_mingworggdb gcc-core-4.8.1-4-mingw32-dll.tar.lzma
@@ -647,7 +684,7 @@ win32-mingworg)
 	# Download & extract MinGW.org toolchain
 	mkdir -p ../input/MinGW.org
 	download_extract_mingw() {
-		download_mingw "$1" 
+		download_mingw "$1"
 		tar xf "../input/MinGW.org/$1"
 	}
 	download_extract_mingw mingwrt-4.0.3-1-mingw32-dev.tar.lzma
@@ -684,24 +721,53 @@ win64)
 	;;
 esac
 
+BUILD_BOOTFBCFLAGS=
+AppendBOOTFBCFLAGS() {
+	if [ ! -z "$1" ]; then
+		if [ -z "$BUILD_BOOTFBCFLAGS" ]; then
+			BUILD_BOOTFBCFLAGS="$1"
+		else
+			BUILD_BOOTFBCFLAGS="$BUILD_BOOTFBCFLAGS $1"
+		fi
+	fi
+}
+
 # choose a bootstrap source for the target
 # - the minimum needed to build the current release
-case $fbtarget in
-linux-arm)
-	# - 1.10.2 for arm is a little weird because it depended on changes 
-	#   in fbc to make the 1.10.2 release work automatically and bootstrap
-	#   on debian 12 with gcc 12.  Could bootstrap from older versions
+# - plus any options to build the current version from the bootstrap version
+case "$named_recipe" in
+-debian12-armhf)
+	# 1.10.2 for arm is a little weird because it depended on changes
+	# in fbc to make the 1.10.2 bootstrap on debian 12 with gcc 12.
+	# So, no matter what, we need some manual intervention for this release
+	# and should improve the automation in the next release
 	#   but it requires some manual intervention to set compile options
-	BUILD_BOOTFBCFLAGS=DEFAULT_CPUTYPE_ARM=FB_CPUTYPE_ARMV7A_FP
-	bootfb_title=FreeBASIC-1.10.2-$fbtarget
+	#
+	AppendBOOTFBCFLAGS "DEFAULT_CPUTYPE_ARM=FB_CPUTYPE_ARMV7A_FP"
+	bootfb_title="FreeBASIC-1.10.2$named_recipe"
 	;;
-linux-aarch64)
-	bootfb_title=FreeBASIC-1.07.2-$fbtarget
+-raspbian9-arm)
+	AppendBOOTFBCFLAGS "DEFAULT_CPUTYPE_ARM=FB_CPUTYPE_ARMV6"
+	bootfb_title="FreeBASIC-1.10.1$named_recipe"
+	;;
+-linux-arm|-rpios10-arm|-rpios11-arm)
+	AppendBOOTFBCFLAGS "DEFAULT_CPUTYPE_ARM=FB_CPUTYPE_ARMV7A"
+	bootfb_title="FreeBASIC-1.10.1$named_recipe"
+	;;
+-rpios10-aarch64|-rpios11-aarch64)
+	bootfb_title="FreeBASIC-1.07.2$named_recipe"
+	;;
+-linux-aarch64|-ubuntu-22.04-aarch64)
+	bootfb_title="FreeBASIC-1.10.1$named_recipe"
 	;;
 *)
-	bootfb_title=FreeBASIC-1.06.0-$fbtarget
+	bootfb_title="FreeBASIC-1.06.0-$fbtarget"
 	;;
 esac
+
+if [ ! -z "$named_recipe" ]; then
+	AppendBOOTFBCFLAGS "FBPACKTARGET=${named_recipe#-}"
+fi
 
 case $fbtarget in
 linux*)
@@ -711,7 +777,7 @@ linux*)
 	# Download & extract FB for bootstrapping
 	bootfb_package=$bootfb_title.tar.xz
 	download $bootfb_package "https://downloads.sourceforge.net/fbc/${bootfb_package}?download"
-	tar xf ../input/$bootfb_package
+	tar xf ../input/$bootfb_package || rm -f ../input/$bootfb_package
 
 	# fbc sources
 	cp -R ../input/fbc .
@@ -723,7 +789,7 @@ linux*)
 	# Download & extract FB for bootstrapping
 	bootfb_package=$bootfb_title.zip
 	download $bootfb_package "https://downloads.sourceforge.net/fbc/${bootfb_package}?download"
-	unzip -q ../input/$bootfb_package
+	unzip -q ../input/$bootfb_package || rm -f ../input/$bootfb_package
 
 	# fbc sources
 	cp -R ../input/fbc fbc
@@ -749,15 +815,25 @@ esac
 #    mingw-w64-gcc-12.2.0
 #    mingw-w64-gcc-13.2.0
 
+if [ -z "$libffi_version" ]; then
+case "$target" in
+win32-mingworg)
+	libffi_version="3.3"
+	libffi_dir="https://github.com/libffi/libffi/releases/download/v${libffi_version}"
+	;;
+esac
+fi
+
+if [ -z "$libffi_version" ]; then
 case "$named_recipe" in
 # older mingw-w64 packages are distributed with headers for libffi-3.2.1
 # but libffi-3.3 below should work for them also
 #-mingw-w64-gcc-5.2.0|-gcc-5.2.0|-mingw-w64-gcc-8.1.0|-gcc-8.1.0)
-#	# libffi sources https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.2.1.tar.gz.
-#	libffi_version="3.2.1"
-#	libffi_dir="https://github.com/libffi/libffi/releases/download/v${libffi_version}"
-#	;;
--winlibs-gcc-9.3.0)
+#   # libffi sources https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.2.1.tar.gz.
+#   libffi_version="3.2.1"
+#   libffi_dir="https://github.com/libffi/libffi/releases/download/v${libffi_version}"
+#   ;;
+-mingw-w64-gcc-5.2.0|-gcc-5.2.0)
 	# - https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz.
 	libffi_version="3.3"
 	libffi_dir="https://github.com/libffi/libffi/releases/download/v${libffi_version}"
@@ -768,6 +844,7 @@ case "$named_recipe" in
 	libffi_dir="https://github.com/libffi/libffi/releases/download/v${libffi_version}"
 	;;
 esac
+fi
 
 case $fbtarget in
 win32)
@@ -833,7 +910,7 @@ EOF
 	mkdir -p fbc/bin/dos
 	cp bin/ar.exe bin/as.exe bin/gdb.exe bin/gprof.exe bin/ld.exe fbc/bin/dos/
 	cp bin/dxe3gen.exe fbc/bin/dos/
-	cp lib/dxe.ld fbc/lib/dos/dxe.ld 
+	cp lib/dxe.ld fbc/lib/dos/dxe.ld
 	cp lib/crt0.o lib/gcrt0.o lib/libdbg.a lib/libemu.a lib/libm.a fbc/lib/dos/
 	cp lib/libstdcxx.a fbc/lib/dos/libstdcx.a
 	cp lib/libsupcxx.a fbc/lib/dos/libsupcx.a
@@ -874,7 +951,7 @@ libffibuild() {
 
 	# on fbc 1.08.0 we changed the libffi version so
 	# don't use any cached files when building the packages
-	# unless we explicitly ask to with --use-libffi-cache 
+	# unless we explicitly ask to with --use-libffi-cache
 	# do we already have the files we need?
 	if [ "$uselibfficache" = "Y" ]; then
 	if [ -f "../input/$libffi_title/$target$named_recipe/ffi.h" ]; then
@@ -893,15 +970,15 @@ libffibuild() {
 	# we might copy in the files directly if we unable to build libffi ourselves
 	# as was the case for libffi-3.2.1 and some gcc tool chains
 	# so just leave this section commented out for reference
-#	case "$named_recipe" in
-#	-gcc-7.1.0|-gcc-7.1.0r0|-gcc-7.1.0r2|-gcc-7.3.0|-gcc-8.1.0)
-#		mkdir -p ../input/$libffi_title/$target$named_recipe
-#		cp opt/lib/libffi-3.3/include/ffi.h       ../input/$libffi_title/$target$named_recipe
-#		cp opt/lib/libffi-3.3/include/ffitarget.h ../input/$libffi_title/$target$named_recipe
-#		cp opt/lib/libffi.a                       ../input/$libffi_title/$target$named_recipe
-#		return
-#		;;
-#	esac
+#   case "$named_recipe" in
+#   -gcc-7.1.0|-gcc-7.1.0r0|-gcc-7.1.0r2|-gcc-7.3.0|-gcc-8.1.0)
+#       mkdir -p ../input/$libffi_title/$target$named_recipe
+#       cp opt/lib/libffi-3.3/include/ffi.h       ../input/$libffi_title/$target$named_recipe
+#       cp opt/lib/libffi-3.3/include/ffitarget.h ../input/$libffi_title/$target$named_recipe
+#       cp opt/lib/libffi.a                       ../input/$libffi_title/$target$named_recipe
+#       return
+#       ;;
+#   esac
 
 	echo
 	echo "building libffi"
@@ -998,11 +1075,11 @@ windowsbuild() {
 	cd ..
 
 	mkdir -p fbc/bin/$fbtarget
-	cp bin/ar.exe		fbc/bin/$fbtarget
-	cp bin/as.exe		fbc/bin/$fbtarget
-	cp bin/dlltool.exe	fbc/bin/$fbtarget
-	cp bin/gprof.exe	fbc/bin/$fbtarget
-	cp bin/ld.exe		fbc/bin/$fbtarget
+	cp bin/ar.exe       fbc/bin/$fbtarget
+	cp bin/as.exe       fbc/bin/$fbtarget
+	cp bin/dlltool.exe  fbc/bin/$fbtarget
+	cp bin/gprof.exe    fbc/bin/$fbtarget
+	cp bin/ld.exe       fbc/bin/$fbtarget
 
 	case "$named_recipe" in
 	-equation-gcc-8.3.0)
@@ -1039,7 +1116,7 @@ windowsbuild() {
 		# libgcc_s_sjlj-1.dll  - SJLJ win32 or win53
 		# libgcc_s_dw2.dll     - dwarf2 win32
 		# libgcc_s_seh.dll     - SEH win64
-		cp bin/libgcc_s_*-1.dll	fbc/bin/$fbtarget
+		cp bin/libgcc_s_*-1.dll fbc/bin/$fbtarget
 
 		case "$target" in
 		win32)
@@ -1047,16 +1124,16 @@ windowsbuild() {
 			cp --parents libexec/gcc/i686-w64-mingw32/$gccversion/cc1.exe fbc/bin
 			cp --parents libexec/gcc/i686-w64-mingw32/$gccversion/*.dll   fbc/bin
 			#also copy as.exe and ld.exe to satify 'gcc --help -v'
-			cp bin/as.exe fbc/bin/libexec/gcc/i686-w64-mingw32/$gccversion/as.exe  
-			cp bin/ld.exe fbc/bin/libexec/gcc/i686-w64-mingw32/$gccversion/ld.exe  
+			cp bin/as.exe fbc/bin/libexec/gcc/i686-w64-mingw32/$gccversion/as.exe
+			cp bin/ld.exe fbc/bin/libexec/gcc/i686-w64-mingw32/$gccversion/ld.exe
 			;;
 		win64)
 			# copy all the dll's from libexec; they are needed for cc1.exe
 			cp --parents libexec/gcc/x86_64-w64-mingw32/$gccversion/cc1.exe fbc/bin
 			cp --parents libexec/gcc/x86_64-w64-mingw32/$gccversion/*.dll   fbc/bin
 			#also copy as.exe and ld.exe to satify 'gcc --help -v'
-			cp bin/as.exe fbc/bin/libexec/gcc/x86_64-w64-mingw32/$gccversion/as.exe  
-			cp bin/ld.exe fbc/bin/libexec/gcc/x86_64-w64-mingw32/$gccversion/ld.exe  
+			cp bin/as.exe fbc/bin/libexec/gcc/x86_64-w64-mingw32/$gccversion/as.exe
+			cp bin/ld.exe fbc/bin/libexec/gcc/x86_64-w64-mingw32/$gccversion/ld.exe
 			;;
 		*)
 			echo "windowsbuild(): invalid target $target"
