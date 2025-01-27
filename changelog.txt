@@ -63,7 +63,8 @@ Version 1.20.0
 - fbc: intrinsic define __FB_OPTION_PROFILE__ to indicate if profiling is currently enabled for code generation
 - rtlib: ./fbc-int/profile.bi - extra features for working with the built-in profiler; ProfileSetFileName(), ProfileGetOptions(), ProfileSetOptions(). ProfileIgnore()
 - '-earraydims' command line option to enable array dimensions checking.  Enabled by default with '-exx' command line option.
-- github #426: add __FB_ARG_LISTEXPAND__( macroname, macroargcount, args... ): expands to one or more 'macroname( .... )' depending on the value of macroargcount and number of arguments in the args... list (skyfish)   
+- github #426: add __FB_ARG_LISTEXPAND__( macroname, macroargcount, args... ): expands to one or more 'macroname( .... )' depending on the value of macroargcount and number of arguments in the args... list (skyfish)
+- fbc: command line option '-z optabstract' to support optimizing purely abstract types, and only preserve used pure abstract types (skyfish)
 
 [fixed]
 - github #410: give consistent floating point comparisons results involving NaNs.
@@ -97,6 +98,8 @@ Version 1.20.0
 - allow long ar and ld command lines in standalone windows builds (adeyblue)
 - gas64: fix casting ulong (with "negative value") to double/single (SARG)
 - gas64: fix optimization prevented converting 32bit memory/register (SARG)
+- fbc: #cmdline "-end" was not resetting the parser, hiding errors and producing a bad executable
+- sf.net #1009: Invalid symbol when accessing indexed PROPERTY arrays BYREF 
 
 
 Version 1.10.3
