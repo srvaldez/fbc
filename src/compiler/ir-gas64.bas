@@ -1430,14 +1430,13 @@ sub dbg_filename(byref filename as string)
 		ctxdbg.prevfilename = filename
 	end if
 end sub
-private sub hwriteasm64( byref ln2 as string,byval opt as integer=KDOALL)
-dim as string ln,lname
+private sub hwriteasm64( byref ln as string,byval opt as integer=KDOALL)
+dim as string lname
 #ifdef __GAS64_DEBUG__
-	if ln2[0]=asc("#") then
-		ln="           "+ln2
+	if ln[0]=asc("#") then
+		ln="           "+ln
 	else
 #endif
-		ln=ln2
 		if ctx.opereg then
 			if ctx.opepass=1 then
 				ctx.opepass=2
