@@ -501,7 +501,7 @@ private sub check_optim(byref code as string)
 		exit sub
 	end if
 
-	if *schptrl=&h20766F6D orelse left(code,3)="mov" then ''mov
+	if *schptrl=cvl("mov ") orelse left(code,3)="mov" then ''mov
 		writepos=len(ctx.proc_txt)+1
 		poschar1=instr(code," ")
 		instruc=left(code,poschar1-1)
@@ -530,7 +530,7 @@ private sub check_optim(byref code as string)
 			prevpart1="":prevpart2="":previnstruc="":flag=KUSE_MOV
 			exit sub
 		end if
-	elseif *schptrl=&h2061656C then ''lea
+	elseif *schptrl=cvl("lea ") then
 		writepos=len(ctx.proc_txt)+1
 		poschar1=instr(code," ")
 		instruc=left(code,poschar1-1)
@@ -553,7 +553,7 @@ private sub check_optim(byref code as string)
 		prevpart2=part2
 		prevwpos=writepos
 		exit sub
-	elseif *schptrl=&h20706D6A then 'jmp
+	elseif *schptrl=cvl(jmp ") then
 		writepos=len(ctx.proc_txt)+1
 		poschar1=instr(code," ")
 		instruc=left(code,poschar1-1)
@@ -586,7 +586,7 @@ private sub check_optim(byref code as string)
 			prevwpos=writepos
 			exit sub
 		end if
-	elseif *schptrl=&h20706D63 then ''cmp
+	elseif *schptrl=cvl("cmp ") then
 		if len(prevpart1) then
 			if flag<>KUSE_LEA then
 				writepos=len(ctx.proc_txt)+1
@@ -984,59 +984,59 @@ private sub reg_freeable(byref lineasm as string)
 	regfound3=-1
 
 	''searching instruction
-	if *schptrs=&h6F6D then 'movxxx
+	if *schptrs=cvshort("mo") then 'movxxx
 		bptr=schptrb
 		bptr+=3
 		while *bptr<>32
 			bptr+=1
 		wend
 		linstruc=bptr-schptrb +1
-	elseif *schptrl=&h2061656C then 'lea
+	elseif *schptrl=cvl("lea ") then
 		instruc=KLEA
-	elseif *schptrl=&h20706D63 then 'cmp
+	elseif *schptrl=cvl("cmp ") then
 		instruc=KCMP
 	''inc dec not neg
-	elseif *schptrl=&h20636E69 orelse *schptrl=&h20636564 orelse _
-	*schptrl=&h20746F6E orelse *schptrl=&h2067656E then
+	elseif *schptrl=cvl("inc ") orelse *schptrl=cvl("dec ") orelse _
+	*schptrl=cvl("not ") orelse *schptrl=cvl("neg ") then
 	''inc r11 --> not freeable / inc qword ptr [r11] --> freeable
 		search(asc("[")) ''is there a bracket if not not freeable ?
 		if ichar=-1 then
 			exit sub
 		End If
-	elseif *schptrl=&h20646461 then 'add
+	elseif *schptrl=cvl("add ") then
 		instruc=KADD
-	elseif *schptrl=&h20627573 then 'sub
-	elseif *schptrl=&h6C756D69 then 'imul
+	elseif *schptrl=cvl("sub ") then
+	elseif *schptrl=cvl("imul") then
 		linstruc=5
-	elseif *schptrl=&h76696469 then 'idiv
+	elseif *schptrl=cvl("idiv") then
 		instruc=KDIV
 		linstruc=5
-	elseif *schptrl=&h20766964 then 'div
-	elseif *schptrl=&h206C6873 then 'shl
-	elseif *schptrl=&h20726873 then 'shr
-	elseif *schptrl=&h20726173 then 'sar
-	elseif *schptrl=&h20646E61 then 'and
-	elseif *schptrl=&h20726F78 then 'xor
-	elseif *schptrl=&h6C6C6163 then 'call
+	elseif *schptrl=cvl("div ") then
+	elseif *schptrl=cvl("shl ") then
+	elseif *schptrl=cvl("shr ") then
+	elseif *schptrl=cvl("sar ") then
+	elseif *schptrl=cvl("and ") then
+	elseif *schptrl=cvl("xor ") then
+	elseif *schptrl=cvl("call") then
 		instruc=KCALL
 		linstruc=5
-	elseif *schptrl=&h20706D6A then 'jmp
-	elseif *schptrl=&h68737570 then 'push
+	elseif *schptrl=cvl("jmp ") then
+	elseif *schptrl=cvl("push") then
 		instruc=KPUSH
 		linstruc=5
-	elseif *schptrl=&h74736574 then 'test
+	elseif *schptrl=cvl("test") then
 		linstruc=5
-	elseif *schptrs=&h726F then 'or
+	elseif *schptrs=cvshort("or") then
 		linstruc=3
-	elseif *schptrl=&h73646461 then 'addss/addsd
+	elseif *schptrl=cvl("adds") then
 		linstruc=5
-	elseif *schptrl=&h73627573 then 'subss/subsd
+	elseif *schptrl=cvl("subs") then
 		linstruc=5
-	elseif *schptrl=&h736C756D then 'mulss/mulsd
+	elseif *schptrl=cvl("muls") then
 		linstruc=5
-	elseif *schptrl=&h73766964 then 'divss/divsd
+	elseif *schptrl=cvl("divs") then
 		linstruc=5
-	elseif *schptrs=&h7663 then 'cvtxxxx
+	elseif *schptrs=cvshort("cv") then
 		if schptrb[8]=asc(" ") then
 			linstruc=9
 		else
@@ -1055,43 +1055,43 @@ private sub reg_freeable(byref lineasm as string)
 		if ichar <> -1 then
 			schptrb+=ichar'+1
 			schptrl=cast(long ptr,schptrb)
-			if *schptrl=&h7062725B then ''rbp
+			if *schptrl=cvl("[rbp") then ''rbp
 				regfound11=KREG_RIP ''just a trick to avoid canceling rbp/rsp reserved
-			elseif *schptrl=&h3131725B then
+			elseif *schptrl=cvl("[r11") then
 				regfound11=KREG_R11
-			elseif *schptrl=&h3031725B then ''r10 r10d r10w r10b
+			elseif *schptrl=cvl("[r10") then ''r10 r10d r10w r10b
 				regfound11=KREG_R10
-			elseif *schptrl=&h7861725B then
+			elseif *schptrl=cvl("[rax") then
 				regfound11=KREG_RAX
-			elseif *schptrl=&h3231725B then
+			elseif *schptrl=cvl("[r12") then
 				regfound11=KREG_R12
-			elseif *schptrl=&h3331725B then
+			elseif *schptrl=cvl("[r13") then
 				regfound11=KREG_R13
-			elseif *schptrl=&h3431725B then
+			elseif *schptrl=cvl("[r14") then
 				regfound11=KREG_R14
-			elseif *schptrl=&h3531725B then ''r15
+			elseif *schptrl=cvl("[r15") then
 				regfound11=KREG_R15
-			elseif *schptrl=&h7862725B then ''rbx
+			elseif *schptrl=cvl("[rbx") then
 				regfound11=KREG_RBX
-			elseif *schptrl=&h7863725B then
+			elseif *schptrl=cvl("[rcx") then
 				regfound11=KREG_RCX
-			elseif *schptrl=&h7864725B then
+			elseif *schptrl=cvl("[rdx") then
 				regfound11=KREG_RDX
-			elseif *schptrl=&h6973725B then
+			elseif *schptrl=cvl("[rsi") then
 				regfound11=KREG_RSI
-			elseif *schptrl=&h6964725B then
+			elseif *schptrl=cvl("[rdi") then
 				regfound11=KREG_RDI
-			elseif *schptrl=&h7073725B then ''rsp
+			elseif *schptrl=cvl("[rsp") then
 				regfound11=KREG_RIP ''just a trick
-			elseif *schptrl=&h7069725B then
+			elseif *schptrl=cvl("[rip") then
 				regfound11=KREG_RIP
 			else
 				bptr=schptrb
 				bptr+=1
 				schptrs=cast(short ptr,bptr)
-				if *schptrs=&h3872 then ''r8
+				if *schptrs=cvshort("r8") then
 					regfound11=KREG_R8
-				elseif *schptrs=&h3972 then''r9
+				elseif *schptrs=cvshort("r9") then
 					regfound11=KREG_R9
 				end if
 			end if
@@ -1099,75 +1099,75 @@ private sub reg_freeable(byref lineasm as string)
 	else ''lower case
 		schptrb-=1 ''searching including space before operand
 		schptrl=cast(long ptr,schptrb)
-		if *schptrl=&h78617220 then
+		if *schptrl=cvl(" rax") then
 			regfound12=KREG_RAX
-		elseif *schptrl=&h31317220 then
+		elseif *schptrl=cvl(" r11") then ''r11 r11d r11w r11b
 			regfound12=KREG_R11
-		elseif *schptrl=&h30317220 then ''r10 r10d r10w r10b
+		elseif *schptrl=cvl(" r10") then
 			regfound12=KREG_R10
-		elseif *schptrl=&h32317220 then
+		elseif *schptrl=cvl(" r12") then
 			regfound12=KREG_R12
-		elseif *schptrl=&h33317220 then
+		elseif *schptrl=cvl(" r13") then
 			regfound12=KREG_R13
-		elseif *schptrl=&h34317220 then
+		elseif *schptrl=cvl(" r14") then
 			regfound12=KREG_R14
-		elseif *schptrl=&h35317220 then ''r15 r15d r15w r15b
+		elseif *schptrl=cvl(" r15") then
 			regfound12=KREG_R15
-		elseif *schptrl=&h78627220 then ''rbx
+		elseif *schptrl=cvl(" rbx") then
 			regfound12=KREG_RBX
-		elseif *schptrl=&h78637220 then
+		elseif *schptrl=cvl(" rcx") then
 			regfound12=KREG_RCX
-		elseif *schptrl=&h78647220 then
+		elseif *schptrl=cvl(" rdx") then
 			regfound12=KREG_RDX
-		elseif *schptrl=&h69737220 then
+		elseif *schptrl=cvl(" rsi") then
 			regfound12=KREG_RSI
-		elseif *schptrl=&h69647220 then
+		elseif *schptrl=cvl(" rdi") then
 			regfound12=KREG_RDI
-		elseif *schptrl=&h70627220 then
+		elseif *schptrl=cvl(" rbp") then
 			regfound12=KREG_RIP ''rbp just a trick
-		elseif *schptrl=&h70737220 then
+		elseif *schptrl=cvl(" rsp") then
 			regfound12=KREG_RIP ''rsp just a trick
-		elseif *schptrl=&h6D6D7820 then
+		elseif *schptrl=cvl(" xmm") then
 			regfound12=KREG_RIP ''xmmN just a trick
 		else
 			bptr=schptrb
 			bptr+=1
 			schptrs=cast(short ptr,bptr)
-			if *schptrs=&h3872 then 'r8 r8d r8w r8b
+			if *schptrs=cvshort("r8") then ''r8 r8d r8w r8b
 				regfound12=KREG_R8
-			elseif *schptrs=&h3972 then'r9 r9d r9w r9b
+			elseif *schptrs=cvshort("r9") then''r9 r9d r9w r9b
 				regfound12=KREG_R9
 			end if
 		end if
 
 		if regfound12=KNOTFOUND then
-			if *schptrl=&h78616520 then 'eax
+			if *schptrl=cvl(" eax") then
 				regfound12=KREG_RAX
-			elseif *schptrl=&h78626520 then
+			elseif *schptrl=cvl(" ebx") then
 				regfound12=KREG_RBX
-			elseif *schptrl=&h78636520 then
+			elseif *schptrl=cvl(" ecx") then
 				regfound12=KREG_RCX
-			elseif *schptrl=&h78646520 then
+			elseif *schptrl=cvl(" edx") then
 				regfound12=KREG_RDX
-			elseif *schptrl=&h69736520 then
+			elseif *schptrl=cvl(" esi") then
 				regfound12=KREG_RSI
-			elseif *schptrl=&h69646520 then 'edi
+			elseif *schptrl=cvl(" edi") then
 				regfound12=KREG_RDI
 			end if
 			if regfound12=KNOTFOUND then
 				schptrb+=1
 				schptrs=cast(short ptr,schptrb)
-				if *schptrs=&h7861 or *schptrs=&h7861 then 'ax,al
+				if *schptrs=cvshort("ax") or *schptrs=cvshort("al") then
 					regfound12=KREG_RAX
-				elseif *schptrs=&h7862 or *schptrs=&h6C62 then 'bx,bl
+				elseif *schptrs=cvshort("bx") or *schptrs=cvshort("bl") then
 					regfound12=KREG_RBX
-				elseif *schptrs=&h7863 or *schptrs=&h6C63 then 'cx,cl
+				elseif *schptrs=cvshort("cx") or *schptrs=cvshort("cl")  then
 					regfound12=KREG_RCX
-				elseif *schptrs=&h7864 or *schptrs=&h6C64 then 'dx,cl
+				elseif *schptrs=cvshort("dx") or *schptrs=cvshort("dl")  then
 					regfound12=KREG_RDX
-				elseif *schptrs=&h6973 then 'si sil
+				elseif *schptrs=cvshort("si") then 'si sil
 					regfound12=KREG_RSI
-				elseif *schptrs=&h6964 then 'di dil
+				elseif *schptrs=cvshort("di") then 'di dil
 					regfound12=KREG_RDI
 				end if
 			end if
@@ -1184,43 +1184,43 @@ private sub reg_freeable(byref lineasm as string)
 			if ichar <> -1 then
 				schptrb+=ichar'+1
 				schptrl=cast(long ptr,schptrb)
-				if *schptrl=&h7062725B then
+				if *schptrl=cvl("[rbp") then
 					regfound21=KREG_RIP ''rbp just a trick
-				elseif *schptrl=&h3131725B then
+				elseif *schptrl=cvl("[r11") then
 					regfound21=KREG_R11
-				elseif *schptrl=&h3031725B then 'r10 r10d r10w r10b
+				elseif *schptrl=cvl("[r10") then
 					regfound21=KREG_R10
-				elseif *schptrl=&h7861725B then
+				elseif *schptrl=cvl("[rax") then
 					regfound21=KREG_RAX
-				elseif *schptrl=&h3231725B then
+				elseif *schptrl=cvl("[r12") then
 					regfound21=KREG_R12
-				elseif *schptrl=&h3331725B then
+				elseif *schptrl=cvl("[r13") then
 					regfound21=KREG_R13
-				elseif *schptrl=&h3431725B then
+				elseif *schptrl=cvl("[r14") then
 					regfound21=KREG_R14
-				elseif *schptrl=&h3531725B then 'r15
+				elseif *schptrl=cvl("[r15") then
 					regfound21=KREG_R15
-				elseif *schptrl=&h7862725B then 'rbx
+				elseif *schptrl=cvl("[rbx") then
 					regfound21=KREG_RBX
-				elseif *schptrl=&h7863725B then
+				elseif *schptrl=cvl("[rcx") then
 					regfound21=KREG_RCX
-				elseif *schptrl=&h7864725B then
+				elseif *schptrl=cvl("[rdx") then
 					regfound21=KREG_RDX
-				elseif *schptrl=&h6973725B then
+				elseif *schptrl=cvl("[rsi") then
 					regfound21=KREG_RSI
-				elseif *schptrl=&h6964725B then
+				elseif *schptrl=cvl("[rdi") then
 					regfound21=KREG_RDI
-				elseif *schptrl=&h7073725B then
+				elseif *schptrl=cvl("[rsp") then
 					regfound21=KREG_RIP ''rsp just a trick
-				elseif *schptrl=&h7069725B then
+				elseif *schptrl=cvl("[rip") then
 					regfound21=KREG_RIP
 				else
 					bptr=schptrb
 					bptr+=1
 					schptrs=cast(short ptr,bptr)
-					if *schptrs=&h3872 then 'r8
+					if *schptrs=cvshort("r8") then
 						regfound21=KREG_R8
-					elseif *schptrs=&h3972 then'r9
+					elseif *schptrs=cvshort("r9") then
 						regfound21=KREG_R9
 					end if
 				end if
@@ -1230,43 +1230,43 @@ private sub reg_freeable(byref lineasm as string)
 					if ichar <> -1 then
 						schptrb+=ichar
 						schptrl=cast(long ptr,schptrb)
-						if *schptrl=&h7062722B then
+						if *schptrl=cvl("+rbp") then
 							regfound3=KREG_RIP ''rbp just a trick
-						elseif *schptrl=&h3131722B then
+						elseif *schptrl=cvl("+r11") then
 							regfound3=KREG_R11
-						elseif *schptrl=&h3031722B then
+						elseif *schptrl=cvl("+r10") then
 							regfound3=KREG_R10
-						elseif *schptrl=&h7861722B then
+						elseif *schptrl=cvl("+rax") then
 							regfound3=KREG_RAX
-						elseif *schptrl=&h3231722B then
+						elseif *schptrl=cvl("+r12") then
 							regfound3=KREG_R12
-						elseif *schptrl=&h3331722B then
+						elseif *schptrl=cvl("+r13") then
 							regfound3=KREG_R13
-						elseif *schptrl=&h3431722B then
+						elseif *schptrl=cvl("+r14") then
 							regfound3=KREG_R14
-						elseif *schptrl=&h3531722B then
+						elseif *schptrl=cvl("+r15") then
 							regfound3=KREG_R15
-						elseif *schptrl=&h7862722B then
+						elseif *schptrl=cvl("+rbx") then
 							regfound3=KREG_RBX
-						elseif *schptrl=&h7863722B then
+						elseif *schptrl=cvl("+rcx") then
 							regfound3=KREG_RCX
-						elseif *schptrl=&h7864722B then
+						elseif *schptrl=cvl("+rdx") then
 							regfound3=KREG_RDX
-						elseif *schptrl=&h6973722B then
+						elseif *schptrl=cvl("+rsi") then
 							regfound3=KREG_RSI
-						elseif *schptrl=&h6964722B then
+						elseif *schptrl=cvl("+rdi") then
 							regfound3=KREG_RDI
-						elseif *schptrl=&h7073722B then
+						elseif *schptrl=cvl("+rsp") then
 							regfound3=KREG_RIP ''rsp just a trick
-						elseif *schptrl=&h7069722B then
+						elseif *schptrl=cvl("+rip") then
 							regfound3=KREG_RIP
 						else
 							bptr=schptrb
 							bptr+=1
 							schptrs=cast(short ptr,bptr)
-							if *schptrs=&h3872 then 'r8
+							if *schptrs=cvshort("r8") then
 								regfound3=KREG_R8
-							elseif *schptrs=&h3972 then'r9
+							elseif *schptrs=cvshort("r9") then
 								regfound3=KREG_R9
 							end if
 						end if
@@ -1277,74 +1277,74 @@ private sub reg_freeable(byref lineasm as string)
 		else ''lower case
 			schptrb-=1 ''searching including space before operand
 			schptrl=cast(long ptr,schptrb)
-			if *schptrl=&h78617220 then
+			if *schptrl=cvl(" rax") then
 				regfound22=KREG_RAX
-			elseif *schptrl=&h31317220 then ''r11 r11d r11w r11b
+			elseif *schptrl=cvl(" r11") then ''r11 r11d r11w r11b
 				regfound22=KREG_R11
-			elseif *schptrl=&h30317220 then
+			elseif *schptrl=cvl(" r10") then
 				regfound22=KREG_R10
-			elseif *schptrl=&h70627220 then
+			elseif *schptrl=cvl(" rbp") then
 				regfound22=KREG_RIP ''rbp just a trick
-			elseif *schptrl=&h32317220 then
+			elseif *schptrl=cvl(" r12") then
 				regfound22=KREG_R12
-			elseif *schptrl=&h33317220 then
+			elseif *schptrl=cvl(" r13") then
 				regfound22=KREG_R13
-			elseif *schptrl=&h34317220 then
+			elseif *schptrl=cvl(" r14") then
 				regfound22=KREG_R14
-			elseif *schptrl=&h35317220 then ''r15 r15d r15w r15b
+			elseif *schptrl=cvl(" r15") then
 				regfound22=KREG_R15
-			elseif *schptrl=&h78627220 then ''rbx
+			elseif *schptrl=cvl(" rbx") then
 				regfound22=KREG_RBX
-			elseif *schptrl=&h78637220 then
+			elseif *schptrl=cvl(" rcx") then
 				regfound22=KREG_RCX
-			elseif *schptrl=&h78647220 then
+			elseif *schptrl=cvl(" rdx") then
 				regfound22=KREG_RDX
-			elseif *schptrl=&h69737220 then
+			elseif *schptrl=cvl(" rsi") then
 				regfound22=KREG_RSI
-			elseif *schptrl=&h69647220 then
+			elseif *schptrl=cvl(" rdi") then
 				regfound22=KREG_RDI
-			elseif *schptrl=&h70737220 then
+			elseif *schptrl=cvl(" rsp") then
 				regfound22=KREG_RIP ''rsp just a trick
-			elseif *schptrl=&h6D6D7820 then
+			elseif *schptrl=cvl(" xmm") then
 				regfound22=KREG_RIP ''xmmN just a trick
 			else
 				bptr=schptrb
 				bptr+=1
 				schptrs=cast(short ptr,bptr)
-				if *schptrs=&h3872 then ''r8 r8d r8w r8b
+				if *schptrs=cvshort("r8") then ''r8 r8d r8w r8b
 					regfound22=KREG_R8
-				elseif *schptrs=&h3972 then''r9 r9d r9w r9b
+				elseif *schptrs=cvshort("r9") then''r9 r9d r9w r9b
 					regfound22=KREG_R9
 				end if
 			end if
 			if regfound22=KNOTFOUND then
-				if *schptrl=&h78616520 then ''eax
+				if *schptrl=cvl(" eax") then
 					regfound22=KREG_RAX
-				elseif *schptrl=&h78626520 then
+				elseif *schptrl=cvl(" ebx") then
 					regfound22=KREG_RBX
-				elseif *schptrl=&h78636520 then
+				elseif *schptrl=cvl(" ecx") then
 					regfound22=KREG_RCX
-				elseif *schptrl=&h78646520 then
+				elseif *schptrl=cvl(" edx") then
 					regfound22=KREG_RDX
-				elseif *schptrl=&h69736520 then
+				elseif *schptrl=cvl(" esi") then
 					regfound22=KREG_RSI
-				elseif *schptrl=&h69646520 then
+				elseif *schptrl=cvl(" edi") then
 					regfound22=KREG_RDI
 				end if
 				if regfound22=KNOTFOUND then
 					schptrb+=1
 					schptrs=cast(short ptr,schptrb)
-					if *schptrs=&h7861 or *schptrs=&h7861 then ''ax,al
+					if *schptrs=cvshort("ax") or *schptrs=cvshort("al") then
 						regfound22=KREG_RAX
-					elseif *schptrs=&h7862 or *schptrs=&h6C62 then ''bx,bl
+					elseif *schptrs=cvshort("bx") or *schptrs=cvshort("bl") then
 						regfound22=KREG_RBX
-					elseif *schptrs=&h7863 or *schptrs=&h6C63 then ''cx,cl
+					elseif *schptrs=cvshort("cx") or *schptrs=cvshort("cl") then
 						regfound22=KREG_RCX
-					elseif *schptrs=&h7864 or *schptrs=&h6C64 then ''dx,cl
+					elseif *schptrs=cvshort("dx") or *schptrs=cvshort("dl") then
 						regfound22=KREG_RDX
-					elseif *schptrs=&h6973 then ''si sil
+					elseif *schptrs=cvshort("si") then
 						regfound22=KREG_RSI
-					elseif *schptrs=&h6964 then ''di dil
+					elseif *schptrs=cvshort("di") then
 						regfound22=KREG_RDI
 					end if
 				end if
