@@ -27,9 +27,10 @@ Version 1.20.0
 - PEEK, POKE, and SWAP are now quirk words instead of keywords allowing these names to be used as member procedure names
 - fbdoc: change CRegex.bas to use pcre2 since the libpcre (a.k.a pcre3) is obsolete in favour of pcre2 by upstream (Ahmad Khalifa)
 - PEEK, POKE, and SWAP are now quirk words instead of keywords allowing these names to be used as member procedure names
-- "\Unnnnnnnn" escape sequence is mapped as follows: when within unicode BMP, "\unnnn", otherwise on linux "\Unnnnnnnn", or on windows "\uD8XX\uDCXX" surrogate pair.  
+- "\Unnnnnnnn" escape sequence is mapped as follows: when within unicode BMP, "\unnnn", otherwise on linux "\Unnnnnnnn", or on windows "\uD8XX\uDCXX" surrogate pair.
 - __FB_QUERY_SYMBOL__( fbc.FB_QUERY_SYMBOL.mangletype, symbol ) returns the mangled type name of symbol
 - headers: portaudio version 19.7.0 - based on pa_stable_v190700_20210406
+- gas64: improve performance of gas64 back-end (SARG)
 
 [added]
 - x86_64: optimize SHL MOD INTDIV to use 32-bit operation when result will be converted to long/ulong
@@ -107,7 +108,9 @@ Version 1.20.0
 - gas64: fix optimization prevented converting 32bit memory/register (SARG)
 - fbc: #cmdline "-end" was not resetting the parser, hiding errors and producing a bad executable
 - sf.net #1009: Invalid symbol when accessing indexed PROPERTY arrays BYREF
-- sf.net #795: unsupported \UNNNN escape sequence is miscompiled - expect "\Unnnnnnnn" escape to have 8 digits  
+- sf.net #795: unsupported \UNNNN escape sequence is miscompiled - expect "\Unnnnnnnn" escape to have 8 digits
+- fbc: unicode code points in UTF-8 and UTF-32LE/BE encoded files were incorrectly converted to UTF-16LE/BE surrogate pairs when code point was in a supplementary planes (codepoints greate than U+FFFF)
+- fbc: fix source typo where bitfield FB_UDTOPT_HASFILLEDFIELD was overlapping FB_UDTOPT_VALISTTYPEMASK possibly causing bad code generation for UDT's with STRING*N fields
 
 
 Version 1.10.3
