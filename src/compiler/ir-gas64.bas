@@ -618,7 +618,7 @@ private sub check_optim(byref code as string)
 							''cmp reg, 0 --> test reg, reg
 							#ifdef __GAS64_DEBUG__
 								mid(ctx.proc_txt,prevwpos)="#17"
-								code="#17"+code+newline+"   "+"test "+prevpart2+", "+prevpart2+" #x17"
+								code="#17"+code+newline+"   "+"test "+prevpart2+", "+prevpart2+" #17"
 							#else
 								*textptr=prevwpos-1 ''new length
 								code="test "+prevpart2+", "+prevpart2
@@ -642,7 +642,11 @@ private sub check_optim(byref code as string)
 						#endif
 					else
 						if part1[0]=asc("r") and part2="0" then
-							code="test "+part1+", "+part1+" #18"
+							#ifdef __GAS64_DEBUG__
+								code="test "+part1+", "+part1+" #18"
+							#else
+								code="test "+part1+", "+part1
+							#endif
 							prevpart1="":prevpart2="":previnstruc="":flag=KUSE_MOV ''reinit
 						End If
 					end if
@@ -663,7 +667,11 @@ private sub check_optim(byref code as string)
 			''cmp reg, 0 --> test reg, reg
 			part2=trim(Mid(code,poschar2+1,poschar1-poschar2))
 			if part1[0]=asc("r") and part2="0" then
-				code="test "+part1+", "+part1+" #18"
+				#ifdef __GAS64_DEBUG__
+					code="test "+part1+", "+part1+" #18"
+				#else
+					code="test "+part1+", "+part1
+				#endif
 				prevpart1="":prevpart2="":previnstruc="":flag=KUSE_MOV ''reinit
 			end if
 		end if
@@ -690,7 +698,7 @@ private sub check_optim(byref code as string)
 							code="#15"+code+newline+"   "+instruc+" "+part1+", "+prevpart2+" #15"
 						#else
 							*textptr=prevwpos-1 ''new length substarcting also final zero
-							code=instruc+" "+part1+", "+prevpart2+" #x15"
+							code=instruc+" "+part1+", "+prevpart2
 						#endif
 					end if
 				end if
@@ -715,7 +723,7 @@ private sub check_optim(byref code as string)
 					code="#04"+code+newline+"   "+newcode+" #04"
 				#else
 					*textptr=prevwpos-1 ''new length
-					code=newcode+" #x04"
+					code=newcode
 				#EndIf
 				prevpart1=mid(part1,1,instr(part1,"[")-1)+prevpart2
 				prevpart2=part2
@@ -735,7 +743,7 @@ private sub check_optim(byref code as string)
 					code="#05"+code+newline+"   "+newcode+" #05"
 				#else
 					*textptr=prevwpos-1 ''new length
-					code=newcode+" #x05"
+					code=newcode
 				#endif
 			else
 				if part1[0]=asc("r") andalso part2="["+prevpart1+"]" then
@@ -746,7 +754,7 @@ private sub check_optim(byref code as string)
 						code="#07"+code+newline+"   "+newcode+" #07"
 					#else
 						*textptr=prevwpos-1 ''new length
-						code=newcode+" #x07"
+						code=newcode
 					#endif
 				else
 					prevpart1=part1
@@ -812,7 +820,7 @@ private sub check_optim(byref code as string)
 					code="#02"+code+newline+"   "+previnstruc+" "+part1+", "+prevpart2+" #02"
 				#else
 					'writepos=len(ctx.proc_txt)+len(code)+3
-					code=previnstruc+" "+part1+", "+prevpart2+" #x02"
+					code=previnstruc+" "+part1+", "+prevpart2
 				#endif
 				part2=prevpart2
 			''xmm register ?
@@ -848,7 +856,7 @@ private sub check_optim(byref code as string)
 					writepos=len(ctx.proc_txt)+len(code)+9
 					code="#03"+code+newline+"   "+instruc+" "+part1+", "+prevpart2+" #03"
 				#else
-					code=instruc+" "+part1+", "+prevpart2+" #x03"
+					code=instruc+" "+part1+", "+prevpart2
 				#endif
 				part2=prevpart2
 			elseif ( part1[0]=asc("r") or part1[0]=asc("e") ) and prevpart1=part2 and instr(prevpart1,"[")=0 then
@@ -860,7 +868,7 @@ private sub check_optim(byref code as string)
 				#else
 					*textptr=prevwpos-1 ''new length
 					writepos=prevwpos
-					code=previnstruc+" "+part1+", "+prevpart2+" #x06"
+					code=previnstruc+" "+part1+", "+prevpart2
 				#endif
 				part2=prevpart2
 			elseif ( prevpart2[0]=asc("r") or prevpart2[0]=asc("e") ) and prevpart1=part2 then 'and instr(part1,"[")=0
@@ -899,7 +907,7 @@ private sub check_optim(byref code as string)
 				#ifdef __GAS64_DEBUG__
 					code="#16"+code+newline+"   "+instruc+" "+part1+", "+prevpart2+" #16"
 				#else
-					code=instruc+" "+part1+", "+prevpart2+" #16"
+					code=instruc+" "+part1+", "+prevpart2
 				#endif
 				part2=prevpart2
 
@@ -921,7 +929,7 @@ private sub check_optim(byref code as string)
 					#ifdef __GAS64_DEBUG__
 						code="#19"+code+newline+"   "+instruc+" "+part1+", "+prevpart2+" #19"
 					#else
-						code=instruc+" "+part1+", "+prevpart2+" #19"
+						code=instruc+" "+part1+", "+prevpart2
 					#endif
 					part2=prevpart2
 				end if
