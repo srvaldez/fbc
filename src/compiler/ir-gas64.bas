@@ -464,6 +464,8 @@ dim shared as const byte reg_prio(0 to ...)={KREG_R11,KREG_R10,KREG_R8,KREG_R9,K
 ''registers used for parameters + R10/R11 for saving
 dim shared as integer listreg(any)
 '' ================== for optimization =========================================================
+''see comment in reg_freeable about use of *<var ptr> for comparing string
+
 private sub check_optim(byref code as string)
 
 	dim as string part1,part2,instruc,newcode
@@ -966,6 +968,9 @@ end sub
 #define KPUSH 7
 
 '======================================================
+'' using *<long ptr> and *<short ptr> to avoid left() and tempo string in string comparison and so speed up greatly compilation
+'' normally no issue as including the ending zero every asm instruction string is at least 4 bytes long
+
 private sub reg_freeable(byref lineasm as string)
 
 	dim as Integer ichar=any,linstruc=any,instruc=any
