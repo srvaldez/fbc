@@ -555,7 +555,7 @@ private sub check_optim(byref code as string)
 		prevpart2=part2
 		prevwpos=writepos
 		exit sub
-	elseif *schptrl=cvl(jmp ") then
+	elseif *schptrl=cvl("jmp ") then
 		writepos=len(ctx.proc_txt)+1
 		poschar1=instr(code," ")
 		instruc=left(code,poschar1-1)
