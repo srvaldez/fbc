@@ -304,6 +304,7 @@ function rtlMemNewOp _
 
 	dim as ASTNODE ptr proc = any
 	dim as FBSYMBOL ptr sym = any
+	dim as boolean do_calloc = false
 
 	'' try to find an overloaded new()
 	if( typeGet( dtype ) = FB_DATATYPE_STRUCT ) then
@@ -322,6 +323,7 @@ function rtlMemNewOp _
 	'' If no new overload was declared, just call allocate() or callocate() if zeroed
 	if( sym = NULL ) then
 		if ( do_clear ) then
+			do_calloc = true
 			sym = rtlProcLookup( @"callocate", FB_RTL_IDX_CALLOCATE )
 		else
 			sym = rtlProcLookup( @"allocate", FB_RTL_IDX_ALLOCATE )
@@ -339,8 +341,7 @@ function rtlMemNewOp _
 	if( astNewARG( proc, len_expr ) = NULL ) then
 		exit function
 	end if
-
-	if ( do_clear ) then
+	if ( do_calloc ) then
 		astNewARG( proc, astNewCONSTi( 1, FB_DATATYPE_UINT ) )
 	end if
 

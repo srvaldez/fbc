@@ -166,8 +166,9 @@ function astBuildNewOp _
 			end if
 		'' Zero-initialize the buffer?
 		elseif( do_clear ) then
-			if( newexpr <> NULL ) then
-				'' only zeroing for placement without any otherwise callocate does the job
+			if( ( newexpr <> NULL ) orelse _
+			( ( typeGet( dtype ) = FB_DATATYPE_STRUCT ) andalso (symbGetCompOpOvlHead( subtype, astGetOpSelfVer( op ) ) <> 0 ) ) ) then
+				'' only zeroing for placement without any otherwise callocate does the job also if overload new
 				init = INIT_CLEAR
 				elementstreecount += 1
 			end if
