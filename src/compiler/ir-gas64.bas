@@ -2466,19 +2466,36 @@ private sub memfill(byval bytestofill as Integer,byref dst as string,byval dtyp 
 	if nbbytes>7 then  ''clear by 8 bytes step
 		nb8=nbbytes\8
 		if nb8>7 then ''more than 7 times 64+
-			asm_code("mov rax, "+Str(nb8))
-			lname=*symbUniqueLabel( )
-			asm_code(lname+":")
-			if( fillchar = 0 ) then
-				asm_code("mov QWORD PTR ["+regdst+"], 0")
-			else
-				asm_code("mov DWORD PTR ["+regdst+"], "+Str(fill4))
-				asm_code("mov DWORD PTR 4["+regdst+"], "+Str(fill4))
+			dim as integer tempreg
+			''to avoid the use of rcx,rdx and r8 like free registers
+			reg_allowed(false)
+			''if rcx, rdx or r8 are used moved to another register
+			if reghandle(KREG_RCX)<>KREGFREE and reghandle(KREG_RCX)<>KREGLOCK then
+				tempreg=reghandle(KREG_RCX)
+				reg_findfree(tempreg)
+				asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_RCX))
 			end if
-			asm_code("add "+regdst+", 8")
-			asm_code("dec rax")
-			asm_code("jnz "+lname)
-			nbbytes-=nb8*8
+
+			if reghandle(KREG_RDX)<>KREGFREE and reghandle(KREG_RDX)<>KREGLOCK then
+				tempreg=reghandle(KREG_RDX)
+				reg_findfree(tempreg)
+				asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_RDX))
+			end if
+
+			if reghandle(KREG_R8)<>KREGFREE and reghandle(KREG_R8)<>KREGLOCK then
+				tempreg=reghandle(KREG_R8)
+				reg_findfree(tempreg)
+				asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_R8))
+			end if
+
+			asm_code("mov rcx, "+regdst)
+			asm_code("mov rdx, "+Str(fillchar),KNOALL)
+			asm_code("mov r8, "+Str(nbbytes),KNOALL)
+			asm_code("call memset")
+
+			reg_allowed(true)
+			exit sub
+
 		else
 			if( fill4 = 0 ) then
 				for inb8 as integer = 0 To nb8-1
@@ -7320,7 +7337,7 @@ private sub _emitjmptb _
 end sub
 private sub _emitmem(byval op as integer,byval v1 as IRVREG ptr,byval v2 as IRVREG ptr,byval bytes as longint,byval fillchar as integer)
 
-	dim as string op1,op2,op3,lname1,lname2,instruc="mov "
+	dim as string op1,op2,op3,instruc="mov "
 	dim as const zstring ptr regtempo
 	dim as integer desttyp=KUSE_MOV,srctyp=KUSE_MOV,regsrc
 
@@ -7350,39 +7367,52 @@ private sub _emitmem(byval op as integer,byval v1 as IRVREG ptr,byval v2 as IRVR
 				exit sub
 			end if
 
-			if v2->typ=IR_VREGTYPE_REG or v2->typ=IR_VREGTYPE_VAR then ''todo to be replaced by repsto ?
+			if v2->typ=IR_VREGTYPE_REG or v2->typ=IR_VREGTYPE_VAR then
+
+				dim as integer tempreg
+				''to avoid the use of rcx,rdx and r8 like free registers (every free reg locked)
+				reg_allowed(false)
+				''if rcx, rdx or r8 are used moved to another register
+				if reghandle(KREG_RCX)<>KREGLOCK then ''as rcx is used need to transfer its contain to another register
+					tempreg=reghandle(KREG_RCX)
+					reg_findfree(tempreg)
+					asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_RCX))
+				end if
+
+				if reghandle(KREG_RDX)<>KREGLOCK then
+					tempreg=reghandle(KREG_RDX)
+					reg_findfree(tempreg)
+					asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_RDX))
+				end if
+
+				if reghandle(KREG_R8)<>KREGLOCK then
+					tempreg=reghandle(KREG_R8)
+					reg_findfree(tempreg)
+					asm_code("mov "+*regstrq(reg_findreal(tempreg))+", "+*regstrq(KREG_R8))
+				end if
+
+				if op1<>"rcx" then
+					asm_code("mov rcx, "+op1)
+				end if
+
+				asm_code("mov rdx, "+str(fillchar),KNOALL)
 
 				if v2->typ=IR_VREGTYPE_REG then
 					op2=*regstrq(reg_findreal(v2->reg))
+					if op2<>"r8" then
+						asm_code("mov r8, "+op2)
+					End If
 				else
-					if reghandle(KREG_RCX)<>KREGFREE then
-						asm_code("push rcx")
-					end if
-					op2="rcx"
 					if symbIsStatic(v1->sym) Or symbisshared(v1->sym) then
-						asm_code("mov rcx, "+*symbGetMangledName(v2->sym)+"[rip+"+Str(v2->ofs)+"]")
+						asm_code("mov r8, "+*symbGetMangledName(v2->sym)+"[rip+"+Str(v2->ofs)+"]",KNOALL)
 					else
-						asm_code("mov rcx, "+Str(v2->ofs)+"[rbp]")
+						asm_code("mov r8, "+Str(v2->ofs)+"[rbp]",KNOALL)
 					end if
 				End If
 
-				asm_code("test "+op2+", "+op2)
-				lname2=*symbUniqueLabel( )
-				''zero byte to clear so skip
-				asm_code("jz "+lname2)
-				asm_code("mov rax, "+op1)
-				lname1=*symbUniqueLabel( )
-				asm_code(lname1+":")
-				asm_code("mov BYTE PTR [rax], " + str(fillchar))
-				asm_code("inc rax")
-				asm_code("dec "+op2)
-				asm_code("jnz "+lname1)
+				asm_code("call memset")
 
-				asm_code(lname2+":")
-
-				if v2->typ=IR_VREGTYPE_VAR and reghandle(KREG_RCX)<>KREGFREE then
-					asm_code("pop rcx",KNOFREE)
-				end if
+				reg_allowed(true)
 
 				exit sub
 			end if
