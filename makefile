@@ -860,10 +860,7 @@ else ifneq ($(findstring MSYS_NT,$(shell uname)),)
 	$(QUIET)rm -f $@
 	$(QUIET_AR)$(AR) rcs $@ $(libfbobjdir)/*.o
 else
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 endif
 $(LIBFB_C): $(libfbobjdir)/%.o: %.c $(LIBFB_H) | $(libfbobjdir)
 	$(QUIET_CC)$(CC) $(ALLCFLAGS) -c $< -o $@
@@ -871,10 +868,7 @@ $(LIBFB_S): $(libfbobjdir)/%.o: %.s $(LIBFB_H) | $(libfbobjdir)
 	$(QUIET_CPPAS)$(CC) -x assembler-with-cpp $(ALLCFLAGS) -c $< -o $@
 
 $(libdir)/libfbpic.a: $(LIBFBPIC_C) $(LIBFBPIC_S) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBPIC_C): $(libfbpicobjdir)/%.o: %.c $(LIBFB_H) | $(libfbpicobjdir)
 	$(QUIET_CC)$(CC) -fPIC $(ALLCFLAGS) -c $< -o $@
 $(LIBFBPIC_S): $(libfbpicobjdir)/%.o: %.s $(LIBFB_H) | $(libfbpicobjdir)
@@ -890,10 +884,7 @@ else ifneq ($(findstring MSYS_NT,$(shell uname)),)
 	$(QUIET)rm -f $@
 	$(QUIET_AR)$(AR) rcs $@ $(libfbmtobjdir)/*.o
 else
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 endif
 $(LIBFBMT_C): $(libfbmtobjdir)/%.o: %.c $(LIBFB_H) | $(libfbmtobjdir)
 	$(QUIET_CC)$(CC) -DENABLE_MT $(ALLCFLAGS) -c $< -o $@
@@ -901,10 +892,7 @@ $(LIBFBMT_S): $(libfbmtobjdir)/%.o: %.s $(LIBFB_H) | $(libfbmtobjdir)
 	$(QUIET_CPPAS)$(CC) -x assembler-with-cpp -DENABLE_MT $(ALLCFLAGS) -c $< -o $@
 
 $(libdir)/libfbmtpic.a: $(LIBFBMTPIC_C) $(LIBFBMTPIC_S) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBMTPIC_C): $(libfbmtpicobjdir)/%.o: %.c $(LIBFB_H) | $(libfbmtpicobjdir)
 	$(QUIET_CC)$(CC) -DENABLE_MT -fPIC $(ALLCFLAGS) -c $< -o $@
 $(LIBFBMTPIC_S): $(libfbmtpicobjdir)/%.o: %.s $(LIBFB_H) | $(libfbmtpicobjdir)
@@ -946,10 +934,7 @@ else
 ifneq ($(LIBFBRT_C),)
 	$(QUIET_AR)rm -f $@; cp $(LIBFBRT_C) $(libfbrtobjdir); $(AR) rcs $@ $^
 else
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 endif
 endif
 $(LIBFBRT_BAS): $(libfbrtobjdir)/%.o: %.bas $(LIBFBRT_BI) | $(libfbrtobjdir)
@@ -981,10 +966,7 @@ else
 ifneq ($(LIBFBRTMT_C),)
 	$(QUIET_AR)rm -f $@; cp $(LIBFBRTMT_C) $(libfbrtmtobjdir); $(AR) rcs $@ $^
 else
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 endif
 endif
 $(LIBFBRTMT_BAS): $(libfbrtmtobjdir)/%.o: %.bas $(LIBFBRT_BI) | $(libfbrtmtobjdir)
@@ -1003,38 +985,26 @@ $(LIBFBMTRTPIC_BAS): $(libfbrtmtpicobjdir)/%.o: %.c $(LIBFBRT_BI) | $(libfbrtmtp
 gfxlib2: $(GFX_LIBS)
 
 $(libdir)/libfbgfx.a: $(LIBFBGFX_C) $(LIBFBGFX_S) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBGFX_C): $(libfbgfxobjdir)/%.o: %.c $(LIBFBGFX_H) | $(libfbgfxobjdir)
 	$(QUIET_CC)$(CC) $(ALLCFLAGS) -c $< -o $@
 $(LIBFBGFX_S): $(libfbgfxobjdir)/%.o: %.s $(LIBFBGFX_H) | $(libfbgfxobjdir)
 	$(QUIET_CPPAS)$(CC) -x assembler-with-cpp $(ALLCFLAGS) -c $< -o $@
 
 $(libdir)/libfbgfxpic.a: $(LIBFBGFXPIC_C) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBGFXPIC_C): $(libfbgfxpicobjdir)/%.o: %.c $(LIBFBGFX_H) | $(libfbgfxpicobjdir)
 	$(QUIET_CC)$(CC) -fPIC $(ALLCFLAGS) -c $< -o $@
 
 $(libdir)/libfbgfxmt.a: $(LIBFBGFXMT_C) $(LIBFBGFXMT_S) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBGFXMT_C): $(libfbgfxmtobjdir)/%.o: %.c $(LIBFBGFX_H) | $(libfbgfxmtobjdir)
 	$(QUIET_CC)$(CC) -DENABLE_MT $(ALLCFLAGS) -c $< -o $@
 $(LIBFBGFXMT_S): $(libfbgfxmtobjdir)/%.o: %.s $(LIBFBGFX_H) | $(libfbgfxmtobjdir)
 	$(QUIET_CPPAS)$(CC) -x assembler-with-cpp -DENABLE_MT $(ALLCFLAGS) -c $< -o $@
 
 $(libdir)/libfbgfxmtpic.a: $(LIBFBGFXMTPIC_C) | $(libdir)
-	$(QUIET_AR)rm -f $@; \
-	for f in $(libfbobjdir)/*.o; do \
-		$(AR) q $@ $$f; \
-	done
+	$(QUIET_AR)rm -f $@; $(AR) rcs $@ $^
 $(LIBFBGFXMTPIC_C): $(libfbgfxmtpicobjdir)/%.o: %.c $(LIBFBGFX_H) | $(libfbgfxmtpicobjdir)
 	$(QUIET_CC)$(CC) -DENABLE_MT -fPIC $(ALLCFLAGS) -c $< -o $@
 
