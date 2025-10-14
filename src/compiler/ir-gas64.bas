@@ -1443,8 +1443,8 @@ sub dbg_filename(byref filename as string)
 		ctxdbg.prevfilename = filename
 	end if
 end sub
-private sub hwriteasm64( byref ln as string,byval opt as integer=KDOALL)
-dim as string lname
+private sub hwriteasm64( byref ln2 as string, byval opt as integer=KDOALL)
+dim as string lname, ln=ln2
 #ifdef __GAS64_DEBUG__
 	if ln[0]=asc("#") then
 		ln="           "+ln
