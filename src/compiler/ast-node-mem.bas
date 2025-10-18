@@ -166,8 +166,12 @@ function astBuildNewOp _
 			end if
 		'' Zero-initialize the buffer?
 		elseif( do_clear ) then
-			init = INIT_CLEAR
-			elementstreecount += 1
+			if( ( newexpr <> NULL ) orelse _
+			( ( typeGet( dtype ) = FB_DATATYPE_STRUCT ) andalso (symbGetCompOpOvlHead( subtype, astGetOpSelfVer( op ) ) <> 0 ) ) ) then
+				'' only zeroing for placement without any otherwise callocate does the job also if overload new
+				init = INIT_CLEAR
+				elementstreecount += 1
+			end if
 		end if
 	end if
 
@@ -211,7 +215,7 @@ function astBuildNewOp _
 					astNewCONSTi( typeGetSize( FB_DATATYPE_UINT ), FB_DATATYPE_UINT ) )
 		end if
 
-		newexpr = rtlMemNewOp( op, lenexpr, dtype, subtype )
+		newexpr = rtlMemNewOp( op, lenexpr, dtype, subtype, do_clear )
 		if( newexpr = NULL ) then
 			return NULL
 		end if

@@ -29,10 +29,11 @@
 #undef fb_MemMove
 #undef fb_MemCopyClear
 
-'' must have declaration of "..allocate()" and "..deallocate()"
+'' must have declaration of "..allocate()", "..callocate()" and "..deallocate()"
 '' new, new[], delete, delete[] can't work without these exact names
 extern "C"
 	declare function allocate cdecl alias "malloc" ( byval size as const uinteger ) as any ptr
+	declare function callocate cdecl alias "calloc" ( byval size as const uinteger, byval size as const uinteger = 1 ) as any ptr
 	declare sub deallocate cdecl alias "free" ( byval p as const any ptr )
 end extern
 

@@ -681,6 +681,7 @@ enum FB_RTL_IDX
 	FB_RTL_IDX_MEMCOPYCLEAR
 	FB_RTL_IDX_MEMMOVE
 	FB_RTL_IDX_ALLOCATE
+	FB_RTL_IDX_CALLOCATE
 	FB_RTL_IDX_DEALLOCATE
 
 	FB_RTL_IDX_FILEOPEN
@@ -1293,7 +1294,8 @@ declare function rtlMemNewOp _
 		byval op as integer, _
 		byval len_expr as ASTNODE ptr, _
 		byval dtype as integer, _
-		byval subtype as FBSYMBOL ptr _
+		byval subtype as FBSYMBOL ptr, _
+		byval do_clear as integer _
 	) as ASTNODE ptr
 
 declare function rtlMemDeleteOp _
