@@ -298,11 +298,13 @@ function rtlMemNewOp _
 		byval op as integer, _
 		byval len_expr as ASTNODE ptr, _
 		byval dtype as integer, _
-		byval subtype as FBSYMBOL ptr _
+		byval subtype as FBSYMBOL ptr, _
+		byval do_clear as integer _
 	) as ASTNODE ptr
 
 	dim as ASTNODE ptr proc = any
 	dim as FBSYMBOL ptr sym = any
+	dim as boolean do_calloc = false
 
 	'' try to find an overloaded new()
 	if( typeGet( dtype ) = FB_DATATYPE_STRUCT ) then
@@ -318,11 +320,14 @@ function rtlMemNewOp _
 		sym = NULL
 	end if
 
-	'' If no new overload was declared, just call allocate()
+	'' If no new overload was declared, just call allocate() or callocate() if zeroed
 	if( sym = NULL ) then
-
-		sym = rtlProcLookup( @"allocate", FB_RTL_IDX_ALLOCATE )
-
+		if ( do_clear ) then
+			do_calloc = true
+			sym = rtlProcLookup( @"callocate", FB_RTL_IDX_CALLOCATE )
+		else
+			sym = rtlProcLookup( @"allocate", FB_RTL_IDX_ALLOCATE )
+		end if
 		'' maybe had '#undef allocate'?
 		if( sym = NULL ) then
 			'' rtlProcLookup() already reported the error
@@ -335,6 +340,9 @@ function rtlMemNewOp _
 	'' byval len as uinteger
 	if( astNewARG( proc, len_expr ) = NULL ) then
 		exit function
+	end if
+	if ( do_calloc ) then
+		astNewARG( proc, astNewCONSTi( 1, FB_DATATYPE_UINT ) )
 	end if
 
 	function = proc

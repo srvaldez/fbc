@@ -225,11 +225,12 @@ END_SUITE
 
 '' redefinition of allocate/deallocate
 ''
-'' internally, fbc uses global allocate/deallocate
+'' internally, fbc uses global allocate/callocate/deallocate
 '' to implement NEW, NEW[], DELETE, DELETE[]
 ''
 '' inc/fbc-int/memory.bi has
 ''   #undef allocate
+''   #undef callocate
 ''   #undef deallocate
 ''
 '' and then adds the declarations back in, however
@@ -239,9 +240,10 @@ END_SUITE
 '' instead.
 
 #undef allocate
+#undef Callocate
 #undef deallocate
 
-dim shared as integer allocate_count, deallocate_count
+dim shared as integer allocate_count, deallocate_count, callocate_count
 
 '' provide our own global replacement. calling convention
 '' does not need to match, although the number of arguments
@@ -250,6 +252,11 @@ dim shared as integer allocate_count, deallocate_count
 function allocate( byval size as const uinteger ) as any ptr
 	allocate_count += 1
 	return fbc.allocate( size )
+end function
+
+function callocate( byval number as const uinteger, byval size as const uinteger ) as any ptr
+	callocate_count += 1
+	return fbc.callocate( number,  size)
 end function
 
 sub deallocate( byval p as const any ptr )
@@ -262,32 +269,50 @@ SUITE( fbc_tests.fbc_int.memory )
 	TEST( new_delete1 )
 
 		allocate_count = 0
+		callocate_count = 0
 		deallocate_count = 0
 
 		scope
 			var p = new integer
-			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 1 )
 			CU_ASSERT( deallocate_count = 0 )
 
 			delete p
-			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 1 )
 			CU_ASSERT( deallocate_count = 1 )
-
 		end scope
 
 		scope
 			var p = new integer[10]
-			CU_ASSERT( allocate_count = 2 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 2 )
 			CU_ASSERT( deallocate_count = 1 )
 
 			delete p
-			CU_ASSERT( allocate_count = 2 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 2 )
 			CU_ASSERT( deallocate_count = 2 )
 
 		end scope
 
-		CU_ASSERT( allocate_count = 2 )
-		CU_ASSERT( deallocate_count = 2 )
+		scope
+			var p = new integer[10] {any}
+			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( callocate_count = 2 )
+			CU_ASSERT( deallocate_count = 2 )
+
+			delete p
+			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( callocate_count = 2 )
+			CU_ASSERT( deallocate_count = 3 )
+
+		end scope
+
+		CU_ASSERT( allocate_count = 1 )
+		CU_ASSERT( callocate_count = 2 )
+		CU_ASSERT( deallocate_count = 3 )
 
 	END_TEST
 
@@ -301,31 +326,37 @@ SUITE( fbc_tests.fbc_int.memory )
 		using fbc
 
 		allocate_count = 0
+		callocate_count = 0
 		deallocate_count = 0
 
 		scope
 			var p = new integer
-			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 1 )
 			CU_ASSERT( deallocate_count = 0 )
 
 			delete p
-			CU_ASSERT( allocate_count = 1 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 1 )
 			CU_ASSERT( deallocate_count = 1 )
 
 		end scope
 
 		scope
 			var p = new integer[10]
-			CU_ASSERT( allocate_count = 2 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 2 )
 			CU_ASSERT( deallocate_count = 1 )
 
 			delete p
-			CU_ASSERT( allocate_count = 2 )
+			CU_ASSERT( allocate_count = 0 )
+			CU_ASSERT( callocate_count = 2 )
 			CU_ASSERT( deallocate_count = 2 )
 
 		end scope
 
-		CU_ASSERT( allocate_count = 2 )
+		CU_ASSERT( allocate_count = 0 )
+		CU_ASSERT( callocate_count = 2 )
 		CU_ASSERT( deallocate_count = 2 )
 
 
